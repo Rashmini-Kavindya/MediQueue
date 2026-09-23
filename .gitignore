@@ -3,3 +3,9 @@ node_modules/
 .expo/
 dist/
 build/
+
+
+# AI Tool Configs
+.claude/
+CLAUDE.md
+AGENTS.md
