@@ -30,10 +30,12 @@ app.use((req, res, next) => {
   next();
 });
 
-// Routes (අපි ඊළඟට මේවා හදමු)
-// app.use('/api/auth', require('./routes/authRoutes'));
-// app.use('/api/queue', require('./routes/queueRoutes'));
-// app.use('/api/chatbot', require('./routes/chatbotRoutes'));
+// Routes 
+app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/opds', require('./routes/opdRoutes'));
+app.use('/api/doctors', require('./routes/doctorRoutes'));
+app.use('/api/rooms', require('./routes/roomRoutes'));
+app.use('/api/tokens', require('./routes/tokenRoutes'));
 
 app.get('/', (req, res) => {
   res.send('MediQueue Server Running...');
