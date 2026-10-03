@@ -278,3 +278,63 @@ exports.unlinkPatient = async (req, res) => {
     });
   }
 };
+
+// ======================================================
+// ADMIN - Verify or reject caregiver-patient link
+// ======================================================
+exports.verifyLink = async (req, res) => {
+  try {
+    const { action } = req.body;
+
+    if (!action || !['verify', 'reject'].includes(action)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Action must be either verify or reject.'
+      });
+    }
+
+    const link = await CaregiverLink.findOne({
+      linkId: req.params.id
+    });
+
+    if (!link) {
+      return res.status(404).json({
+        success: false,
+        message: 'Caregiver link not found.'
+      });
+    }
+
+    if (action === 'verify') {
+      link.verified = true;
+      link.status = 'active';
+      link.verifiedBy = req.user.userId;
+      link.verifiedAt = new Date();
+    }
+
+    if (action === 'reject') {
+      link.verified = false;
+      link.status = 'revoked';
+      link.verifiedBy = req.user.userId;
+      link.verifiedAt = new Date();
+    }
+
+    await link.save();
+
+    return res.status(200).json({
+      success: true,
+      data: link,
+      message:
+        action === 'verify'
+          ? 'Caregiver link verified successfully.'
+          : 'Caregiver link rejected successfully.'
+    });
+
+  } catch (error) {
+    console.error('Verify Caregiver Link Error:', error);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Unable to process caregiver link verification.'
+    });
+  }
+};
