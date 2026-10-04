@@ -11,7 +11,9 @@ router.post('/suggest', (req, res, next) => {
   next();
 }, chatbotController.suggestOpd);
 
-// // Authenticated User Chat History
-// router.get('/history', verifyToken, chatbotController.getChatHistory);
+// Authenticated User Chat History
+router.get('/history', verifyToken, chatbotController.getChatHistory);
+router.delete('/history/:logId', verifyToken, chatbotController.deleteChatLog);
+router.delete('/history', verifyToken, chatbotController.clearAllHistory);
 
 module.exports = router;
