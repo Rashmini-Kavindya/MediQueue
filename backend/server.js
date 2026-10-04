@@ -37,6 +37,13 @@ app.use('/api/doctors', require('./routes/doctorRoutes'));
 app.use('/api/rooms', require('./routes/roomRoutes'));
 app.use('/api/tokens', require('./routes/tokenRoutes'));
 
+// Hiba - Caregiver Links
+app.use('/api/links', require('./routes/caregiverLinkRoutes'));
+app.use('/api/admin/links', require('./routes/adminLinkRoutes'));
+app.use('/api/users', require('./routes/profileRoutes'));
+app.use('/api/waiting-areas', require('./routes/waitingAreaRoutes'));
+app.use('/api/admin/users', require('./routes/adminUserRoutes'));
+
 app.get('/', (req, res) => {
   res.send('MediQueue Server Running...');
 });
