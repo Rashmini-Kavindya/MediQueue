@@ -61,3 +61,13 @@ const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
+
+
+
+//Patient Login
+  // "email": "minuri@gmail.com",
+  // "password": "minuri123"
+
+//Admin Login
+  // email": "admin@mediq.lk"
+  // password": "Admin123!"
