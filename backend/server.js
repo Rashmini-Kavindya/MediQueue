@@ -36,6 +36,7 @@ app.use('/api/opds', require('./routes/opdRoutes'));
 app.use('/api/doctors', require('./routes/doctorRoutes'));
 app.use('/api/rooms', require('./routes/roomRoutes'));
 app.use('/api/tokens', require('./routes/tokenRoutes'));
+app.use('/api/chatbot', require('./routes/chatbotRoutes'));
 
 app.get('/', (req, res) => {
   res.send('MediQueue Server Running...');
