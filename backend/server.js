@@ -40,6 +40,7 @@ app.use('/api/tokens', require('./routes/tokenRoutes'));
 // Hiba - Caregiver Links
 app.use('/api/links', require('./routes/caregiverLinkRoutes'));
 app.use('/api/admin/links', require('./routes/adminLinkRoutes'));
+app.use('/api/users', require('./routes/profileRoutes'));
 
 app.get('/', (req, res) => {
   res.send('MediQueue Server Running...');
