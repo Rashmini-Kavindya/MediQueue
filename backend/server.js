@@ -3,6 +3,7 @@ const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
 require('dotenv').config();
+const queueRoutes = require('./routes/queueRoutes'); // Import the queueRoutes configuration
 
 const connectDB = require('./config/db');
 
@@ -44,6 +45,9 @@ app.use('/api/admin/links', require('./routes/adminLinkRoutes'));
 app.use('/api/users', require('./routes/profileRoutes'));
 app.use('/api/waiting-areas', require('./routes/waitingAreaRoutes'));
 app.use('/api/admin/users', require('./routes/adminUserRoutes'));
+
+// 
+app.use('/api/queue', queueRoutes);
 
 app.get('/', (req, res) => {
   res.send('MediQueue Server Running...');
