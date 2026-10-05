@@ -1,5 +1,6 @@
 const CaregiverLink = require('../models/CaregiverLink');
 const User = require('../models/User');
+const Token = require('../models/Token');
 
 // ======================================================
 // CREATE - Link a patient
@@ -35,7 +36,7 @@ exports.linkPatient = async (req, res) => {
       });
     }
 
-    // Find patient by either patientId or NIC + matching phone
+    // Find patient using Patient ID or NIC together with phone number
     const patient = await User.findOne({
       role: 'patient',
       phone,
@@ -52,7 +53,7 @@ exports.linkPatient = async (req, res) => {
       });
     }
 
-    // Check whether this relationship already exists
+    // Check whether this caregiver-patient relationship already exists
     const existingLink = await CaregiverLink.findOne({
       caregiverId: caregiver.caregiverId,
       patientId: patient.patientId
@@ -65,7 +66,7 @@ exports.linkPatient = async (req, res) => {
       });
     }
 
-    // If an old revoked relationship exists, restore it
+    // Restore an old revoked relationship
     if (existingLink && existingLink.status === 'revoked') {
       existingLink.relationship = relationship;
       existingLink.status = 'pending';
@@ -78,11 +79,19 @@ exports.linkPatient = async (req, res) => {
 
       return res.status(200).json({
         success: true,
-        data: existingLink,
+        data: {
+          link: existingLink,
+          patient: {
+            patientId: patient.patientId,
+            firstName: patient.firstName,
+            lastName: patient.lastName
+          }
+        },
         message: 'Patient link request created successfully.'
       });
     }
 
+    // Create a new caregiver-patient link
     const link = await CaregiverLink.create({
       caregiverId: caregiver.caregiverId,
       patientId: patient.patientId,
@@ -162,6 +171,121 @@ exports.getLinkedPatients = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Unable to retrieve linked patients.'
+    });
+  }
+};
+
+
+// ======================================================
+// READ - Get linked patient's current token/status
+// ======================================================
+exports.getLinkedPatientStatus = async (req, res) => {
+  try {
+    // Find the currently logged-in caregiver
+    const caregiver = await User.findOne({
+      userId: req.user.userId,
+      role: 'caregiver'
+    });
+
+    if (!caregiver) {
+      return res.status(404).json({
+        success: false,
+        message: 'Caregiver account not found.'
+      });
+    }
+
+    // Caregiver can only access their own verified and active link
+    const link = await CaregiverLink.findOne({
+      linkId: req.params.id,
+      caregiverId: caregiver.caregiverId,
+      verified: true,
+      status: 'active'
+    });
+
+    if (!link) {
+      return res.status(404).json({
+        success: false,
+        message: 'Active verified caregiver link not found.'
+      });
+    }
+
+    // Find linked patient
+    const patient = await User.findOne({
+      patientId: link.patientId,
+      role: 'patient'
+    }).select(
+      'patientId firstName lastName status'
+    );
+
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: 'Linked patient not found.'
+      });
+    }
+
+    // Find the latest active token belonging to the linked patient
+    const token = await Token.findOne({
+      patientId: link.patientId,
+      status: {
+        $in: [
+          'waiting',
+          'called',
+          'hold',
+          'skipped',
+          'in-consultation'
+        ]
+      }
+    }).sort({ bookedAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+
+      data: {
+        link: {
+          linkId: link.linkId,
+          relationship: link.relationship,
+          verified: link.verified,
+          status: link.status
+        },
+
+        patient: {
+          patientId: patient.patientId,
+          firstName: patient.firstName,
+          lastName: patient.lastName,
+          status: patient.status
+        },
+
+        token: token
+          ? {
+              tokenId: token.tokenId,
+              tokenNo: token.tokenNo,
+              tokenSequence: token.tokenSequence,
+              queueDate: token.queueDate,
+              opdId: token.opdId,
+              doctorId: token.doctorId,
+              roomId: token.roomId,
+              status: token.status,
+              bookedAt: token.bookedAt
+            }
+          : null,
+
+        // These will be connected during team integration
+        liveQueue: null,
+        consultation: null
+      },
+
+      message: token
+        ? 'Linked patient status retrieved successfully.'
+        : 'Linked patient has no active token.'
+    });
+
+  } catch (error) {
+    console.error('Get Linked Patient Status Error:', error);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Unable to retrieve linked patient status.'
     });
   }
 };
@@ -257,7 +381,7 @@ exports.unlinkPatient = async (req, res) => {
       });
     }
 
-    // Soft delete so history is preserved
+    // Soft delete to preserve relationship history
     link.status = 'revoked';
     link.verified = false;
 
@@ -278,6 +402,7 @@ exports.unlinkPatient = async (req, res) => {
     });
   }
 };
+
 
 // ======================================================
 // ADMIN - Verify or reject caregiver-patient link
