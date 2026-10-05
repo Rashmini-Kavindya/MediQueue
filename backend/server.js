@@ -49,8 +49,20 @@ app.use('/api/admin/users', require('./routes/adminUserRoutes'));
 // 
 app.use('/api/queue', queueRoutes);
 
+
+app.use('/api/notifications', require('./routes/notificationRoutes'));
+app.use('/api/alert-preferences', require('./routes/alertPreferenceRoutes'));
+app.use('/api/templates', require('./routes/templateRoutes'));
+app.use('/api/track', require('./routes/trackRoutes'));
+app.use('/api/reports', require('./routes/reportRoutes'));
+app.use('/api/notification-logs', require('./routes/notificationLogRoutes'));
+
 app.get('/', (req, res) => {
   res.send('MediQueue Server Running...');
+});
+
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ success: true, message: "Backend is running!" });
 });
 
 // Socket.io Listener
@@ -75,3 +87,7 @@ server.listen(PORT, () => {
 //Admin Login
   // email": "admin@mediq.lk"
   // password": "Admin123!"
+
+//Caregiver Login
+  //"email": "caregiver@gmail.lk",
+  //"password": "care123"
