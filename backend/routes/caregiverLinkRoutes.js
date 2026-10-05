@@ -1,8 +1,15 @@
 const express = require('express');
 const router = express.Router();
 
-const caregiverLinkController = require('../controllers/caregiverLinkController');
-const { verifyToken, roleGuard } = require('../middleware/auth');
+const caregiverLinkController = require(
+  '../controllers/caregiverLinkController'
+);
+
+const {
+  verifyToken,
+  roleGuard
+} = require('../middleware/auth');
+
 
 // All caregiver-link routes require authentication
 router.use(verifyToken);
@@ -31,13 +38,24 @@ router.get(
 
 
 // ======================================================
-// READ - View linked patient's current token/status
+// READ - Linked patient's token + live queue
 // GET /api/links/:id/status
 // ======================================================
 router.get(
   '/:id/status',
   roleGuard(['caregiver']),
   caregiverLinkController.getLinkedPatientStatus
+);
+
+
+// ======================================================
+// READ - Linked patient's notifications
+// GET /api/links/:id/notifications
+// ======================================================
+router.get(
+  '/:id/notifications',
+  roleGuard(['caregiver']),
+  caregiverLinkController.getLinkedPatientNotifications
 );
 
 
