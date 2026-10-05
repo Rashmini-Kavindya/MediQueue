@@ -80,3 +80,7 @@ server.listen(PORT, () => {
 //Admin Login
   // email": "admin@mediq.lk"
   // password": "Admin123!"
+
+//Caregiver Login
+  //"email": "caregiver@gmail.lk",
+  //"password": "care123"
