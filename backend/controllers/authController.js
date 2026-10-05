@@ -38,7 +38,8 @@ exports.register = async (req, res) => {
       passwordHash,
       role: userRole,
       language: language || 'si',
-      status: 'active'
+      status: 'active',
+      isVerified: false
     });
 
     await newUser.save();
@@ -102,7 +103,8 @@ exports.login = async (req, res) => {
           firstName: user.firstName,
           lastName: user.lastName,
           role: user.role,
-          email: user.email
+          email: user.email,
+          isVerified: user.isVerified
         }
       },
       message: 'Logged in successfully'
@@ -112,7 +114,95 @@ exports.login = async (req, res) => {
   }
 };
 
-// 3. GET CURRENT PROFILE
+// 3. SEND / REQUEST OTP
+exports.sendOtp = async (req, res) => {
+  try {
+    const { phone, email } = req.body;
+
+    if (!phone && !email) {
+      return res.status(400).json({ success: false, message: 'Phone or Email is required' });
+    }
+
+    const user = await User.findOne({
+      $or: [{ phone: phone || null }, { email: email || null }]
+    });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // 6-Digit Random OTP Generator
+    const rawOtp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // OTP Hash කිරීම (Security සඳහා)
+    const salt = await bcrypt.genSalt(10);
+    const otpHash = await bcrypt.hash(rawOtp, salt);
+
+    // Expiry Time: විනාඩි 5ක්
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+    user.otpCodeHash = otpHash;
+    user.otpExpiresAt = expiresAt;
+    await user.save();
+
+    // NOTE: Real System එකකදී මෙතැනදී SMS Gateway (Twilio/Dialog) එකෙන් SMS එකක් යවනු ලබයි.
+    // Testing සඳහා Response එකේ plain OTP එක ලබාදී ඇත:
+    res.status(200).json({
+      success: true,
+      message: 'OTP sent successfully',
+      debugOtp: rawOtp // Development/Testing කාලයේදී පාවිච්චියට පමණි
+    });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// 4. VERIFY OTP
+exports.verifyOtp = async (req, res) => {
+  try {
+    const { phone, email, otp } = req.body;
+
+    if (!otp || (!phone && !email)) {
+      return res.status(400).json({ success: false, message: 'OTP and Phone/Email are required' });
+    }
+
+    const user = await User.findOne({
+      $or: [{ phone: phone || null }, { email: email || null }]
+    });
+
+    if (!user || !user.otpCodeHash || !user.otpExpiresAt) {
+      return res.status(400).json({ success: false, message: 'No active OTP request found' });
+    }
+
+    // OTP Expiry Check
+    if (new Date() > new Date(user.otpExpiresAt)) {
+      return res.status(400).json({ success: false, message: 'OTP has expired. Please request a new one.' });
+    }
+
+    // OTP Match Check
+    const isOtpValid = await bcrypt.compare(otp, user.otpCodeHash);
+    if (!isOtpValid) {
+      return res.status(400).json({ success: false, message: 'Invalid OTP code' });
+    }
+
+    // Verification Success: Status Update & Clear OTP Data
+    user.isVerified = true;
+    user.otpCodeHash = null;
+    user.otpExpiresAt = null;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Account verified successfully'
+    });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// 5. GET CURRENT PROFILE
 exports.getMe = async (req, res) => {
   try {
     const user = await User.findOne({ userId: req.user.userId }).select('-passwordHash -otpCodeHash');
