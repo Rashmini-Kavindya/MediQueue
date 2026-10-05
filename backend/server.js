@@ -58,6 +58,10 @@ app.get('/', (req, res) => {
   res.send('MediQueue Server Running...');
 });
 
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ success: true, message: "Backend is running!" });
+});
+
 // Socket.io Listener
 io.on('connection', (socket) => {
   console.log('⚡ Client connected:', socket.id);
