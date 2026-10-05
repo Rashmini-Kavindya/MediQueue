@@ -2,7 +2,6 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
-// Web එකේදී localhost:5000 ද Mobile එකේදී .env එකේ IP එකද ලබා ගනී
 const API_BASE_URL = Platform.OS === 'web'
   ? 'http://localhost:5000/api'
   : (process.env.EXPO_PUBLIC_API_URL || 'http://172.20.10.8:5000/api');
