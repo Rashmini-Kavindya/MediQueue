@@ -46,7 +46,7 @@ app.use('/api/waiting-areas', require('./routes/waitingAreaRoutes'));
 app.use('/api/admin/users', require('./routes/adminUserRoutes'));
 
 
-app.use('/api/queue', require('./routes/queueRoutes'));
+
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/alert-preferences', require('./routes/alertPreferenceRoutes'));
 app.use('/api/templates', require('./routes/templateRoutes'));
