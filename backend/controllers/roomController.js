@@ -23,3 +23,46 @@ exports.getRooms = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// UPDATE ROOM
+exports.updateRoom = async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const { roomNumber, name, opdId, status } = req.body;
+
+    const updatedRoom = await Room.findOneAndUpdate(
+  { roomId },
+  { roomNumber, name, opdId, status },
+  { returnDocument: 'after', runValidators: true }
+);
+
+    if (!updatedRoom) {
+      return res.status(404).json({ success: false, message: 'Room not found' });
+    }
+
+    res.status(200).json({ success: true, data: updatedRoom, message: 'Room updated successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// SOFT DELETE / DEACTIVATE ROOM
+exports.deleteRoom = async (req, res) => {
+  try {
+    const { roomId } = req.params;
+
+    const room = await Room.findOneAndUpdate(
+  { roomId },
+  { status: 'inactive' },
+  { returnDocument: 'after' }
+);
+
+    if (!room) {
+      return res.status(404).json({ success: false, message: 'Room not found' });
+    }
+
+    res.status(200).json({ success: true, message: 'Room deactivated successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

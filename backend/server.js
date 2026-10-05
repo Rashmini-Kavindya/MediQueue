@@ -36,6 +36,23 @@ app.use('/api/opds', require('./routes/opdRoutes'));
 app.use('/api/doctors', require('./routes/doctorRoutes'));
 app.use('/api/rooms', require('./routes/roomRoutes'));
 app.use('/api/tokens', require('./routes/tokenRoutes'));
+app.use('/api/chatbot', require('./routes/chatbotRoutes'));
+
+// Hiba - Caregiver Links
+app.use('/api/links', require('./routes/caregiverLinkRoutes'));
+app.use('/api/admin/links', require('./routes/adminLinkRoutes'));
+app.use('/api/users', require('./routes/profileRoutes'));
+app.use('/api/waiting-areas', require('./routes/waitingAreaRoutes'));
+app.use('/api/admin/users', require('./routes/adminUserRoutes'));
+
+
+app.use('/api/queue', require('./routes/queueRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
+app.use('/api/alert-preferences', require('./routes/alertPreferenceRoutes'));
+app.use('/api/templates', require('./routes/templateRoutes'));
+app.use('/api/track', require('./routes/trackRoutes'));
+app.use('/api/reports', require('./routes/reportRoutes'));
+app.use('/api/notification-logs', require('./routes/notificationLogRoutes'));
 
 app.get('/', (req, res) => {
   res.send('MediQueue Server Running...');
@@ -53,3 +70,17 @@ const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
+
+
+
+//Patient Login
+  // "email": "minuri@gmail.com",
+  // "password": "minuri123"
+
+//Admin Login
+  // email": "admin@mediq.lk"
+  // password": "Admin123!"
+
+//Caregiver Login
+  //"email": "caregiver@gmail.lk",
+  //"password": "care123"

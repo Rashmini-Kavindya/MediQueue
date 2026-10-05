@@ -23,3 +23,46 @@ exports.getDoctors = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// UPDATE DOCTOR
+exports.updateDoctor = async (req, res) => {
+  try {
+    const { doctorId } = req.params;
+    const { name, specialization, opdIds, roomId, status } = req.body;
+
+    const updatedDoctor = await Doctor.findOneAndUpdate(
+  { doctorId },
+  { name, specialization, opdIds, roomId, status },
+  { returnDocument: 'after', runValidators: true }
+);
+
+    if (!updatedDoctor) {
+      return res.status(404).json({ success: false, message: 'Doctor not found' });
+    }
+
+    res.status(200).json({ success: true, data: updatedDoctor, message: 'Doctor updated successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// SOFT DELETE / DEACTIVATE DOCTOR
+exports.deleteDoctor = async (req, res) => {
+  try {
+    const { doctorId } = req.params;
+
+    const doctor = await Doctor.findOneAndUpdate(
+  { doctorId },
+  { status: 'inactive' },
+  { returnDocument: 'after' }
+);
+
+    if (!doctor) {
+      return res.status(404).json({ success: false, message: 'Doctor not found' });
+    }
+
+    res.status(200).json({ success: true, message: 'Doctor deactivated successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
