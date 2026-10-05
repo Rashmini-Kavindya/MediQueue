@@ -44,6 +44,15 @@ app.use('/api/users', require('./routes/profileRoutes'));
 app.use('/api/waiting-areas', require('./routes/waitingAreaRoutes'));
 app.use('/api/admin/users', require('./routes/adminUserRoutes'));
 
+
+app.use('/api/queue', require('./routes/queueRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
+app.use('/api/alert-preferences', require('./routes/alertPreferenceRoutes'));
+app.use('/api/templates', require('./routes/templateRoutes'));
+app.use('/api/track', require('./routes/trackRoutes'));
+app.use('/api/reports', require('./routes/reportRoutes'));
+app.use('/api/notification-logs', require('./routes/notificationLogRoutes'));
+
 app.get('/', (req, res) => {
   res.send('MediQueue Server Running...');
 });
