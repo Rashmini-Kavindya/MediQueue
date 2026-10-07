@@ -24,7 +24,8 @@ const emitQueueUpdate = async (io, opdId, token) => {
       .select(
         'tokenId tokenNo tokenSequence patientId userId status opdId queueDate'
       );
-
+// TODO: Before final integration/demo, do not expose patientId/userId
+// through the public queue:update socket payload.
     
     io.to(`opd:${opdId}`).emit('queue:update', {
       success: true,

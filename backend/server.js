@@ -46,8 +46,10 @@ app.use('/api/users', require('./routes/profileRoutes'));
 app.use('/api/waiting-areas', require('./routes/waitingAreaRoutes'));
 app.use('/api/admin/users', require('./routes/adminUserRoutes'));
 
-// 
+// Chamupathi Routes 
 app.use('/api/queue', queueRoutes);
+app.use('/api/consultations', require('./routes/consultationRoutes'));
+app.use('/api/prescriptions', require('./routes/prescriptionRoutes'));
 
 
 app.use('/api/notifications', require('./routes/notificationRoutes'));
