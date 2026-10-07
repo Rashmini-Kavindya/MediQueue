@@ -12,6 +12,7 @@ import TokenConfirmationScreen from '../screens/auth/TokenConfirmationScreen';
 
 import AccessScreen from '../screens/auth/Accessscreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
+import StaffLoginScreen from '../screens/staff/StaffLoginScreen';
 
 const AuthStack = createNativeStackNavigator();
 
@@ -30,6 +31,7 @@ export default function AuthNavigator() {
       <AuthStack.Screen name="SelectOpd" component={SelectOpdScreen} />
       <AuthStack.Screen name="TokenConfirmation" component={TokenConfirmationScreen} />
       <AuthStack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+      <AuthStack.Screen name="StaffLogin" component={StaffLoginScreen} />
     </AuthStack.Navigator>
   );
 }
