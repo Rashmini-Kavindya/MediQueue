@@ -63,8 +63,17 @@ export default function LoginScreen({ navigation, route }) {
         <TouchableOpacity onPress={() => navigation.goBack()} className="p-1">
           <Ionicons name="arrow-back" size={24} color="#1E293B" />
         </TouchableOpacity>
+
         <Text className="text-base font-bold text-slate-800">{t('login_title', 'Login')}</Text>
-        <View className="w-6" />
+
+        {/* Staff Login Link in top right corner */}
+        <TouchableOpacity 
+          onPress={() => navigation.navigate('StaffLogin')}
+          className="flex-row items-center bg-slate-100 px-2.5 py-1.5 rounded-lg border border-slate-200"
+        >
+          <Ionicons name="shield-checkmark-outline" size={14} color="#2563EB" />
+          <Text className="text-xs font-semibold text-blue-600 ml-1">Staff</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView
