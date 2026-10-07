@@ -23,7 +23,8 @@
     },
     "plugins": [
       "expo-asset",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-font"
     ]
   }
 }
