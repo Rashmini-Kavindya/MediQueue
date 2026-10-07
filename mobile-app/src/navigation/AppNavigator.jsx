@@ -1,13 +1,13 @@
 import React, { useContext } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
 import { ActivityIndicator, View } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
 import { AuthContext } from '../context/AuthContext';
 
 import AuthNavigator from './AuthNavigator';
-import PatientDashboard from '../screens/patient/PatientDashboard';
+import PatientNavigator from './PatientNavigator';
 
 export default function AppNavigator() {
-  const { user, userRole, loading } = useContext(AuthContext);
+  const { user, loading } = useContext(AuthContext);
 
   if (loading) {
     return (
@@ -17,15 +17,15 @@ export default function AppNavigator() {
     );
   }
 
+  // NavigationContainer must wrap ALL navigators (only one per app)
   return (
     <NavigationContainer>
       {!user ? (
+        // 1. Unauthenticated -> LanguageSelect -> RoleSelectScreen -> Login/Register
         <AuthNavigator />
-      ) : userRole === 'patient' ? (
-        <PatientDashboard />
       ) : (
-        // Caregiver & Admin Navigators ඊළඟට සෙට් කරමු
-        <PatientDashboard />
+        // 2. Logged-in (Patient, Caregiver; Staff/Admin navigator will be added later)
+        <PatientNavigator />
       )}
     </NavigationContainer>
   );

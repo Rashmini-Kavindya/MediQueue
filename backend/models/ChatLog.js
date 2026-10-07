@@ -12,7 +12,7 @@ const chatLogSchema = new mongoose.Schema({
   aiResponse: { type: String, required: true },
   urgencyLevel: {
     type: String,
-    enum: ['LOW', 'MEDIUM', 'CRITICAL_EMERGENCY'],
+    enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL_EMERGENCY'],
     default: 'LOW'
   }
 }, { timestamps: true });

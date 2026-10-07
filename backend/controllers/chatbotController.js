@@ -1,10 +1,99 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
 const ChatLog = require('../models/ChatLog');
 const OPD = require('../models/OPD');
 const User = require('../models/User');
 const { generateId } = require('../utils/id');
 
-// @desc    Suggest OPD using Patient Profile & Gemini AI (Structured JSON + Fast Emergency Override)
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const VALID_URGENCY = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL_EMERGENCY'];
+
+// ---------------------------------------------------------
+// AI PROVIDERS (OpenAI-compatible chat APIs, tried in order)
+// Env: GROQ_API_KEY (primary), MISTRAL_API_KEY (optional fallback)
+// Optional overrides: GROQ_MODEL, MISTRAL_MODEL
+// ---------------------------------------------------------
+const getProviders = () => {
+  const providers = [];
+
+  if (process.env.GROQ_API_KEY) {
+    providers.push({
+      name: 'groq',
+      url: 'https://api.groq.com/openai/v1/chat/completions',
+      apiKey: process.env.GROQ_API_KEY,
+      // Tried in order; a 404 (model missing / no access for this key) moves on to the next one
+      models: [...new Set([
+        process.env.GROQ_MODEL,
+        'llama-3.3-70b-versatile',
+        'openai/gpt-oss-120b',
+        'llama-3.1-8b-instant'
+      ].filter(Boolean))]
+    });
+  }
+
+  if (process.env.MISTRAL_API_KEY) {
+    providers.push({
+      name: 'mistral',
+      url: 'https://api.mistral.ai/v1/chat/completions',
+      apiKey: process.env.MISTRAL_API_KEY,
+      models: [process.env.MISTRAL_MODEL || 'mistral-small-latest']
+    });
+  }
+
+  return providers;
+};
+
+// Calls one provider/model and returns the parsed JSON object. Throws an error with .status on failure.
+const callChatApi = async (provider, modelName, systemInstruction, symptom) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 20000);
+
+  try {
+    const response = await fetch(provider.url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${provider.apiKey}`
+      },
+      body: JSON.stringify({
+        model: modelName,
+        temperature: 0.4,
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: systemInstruction },
+          {
+            role: 'user',
+            content: `Patient Symptoms: "${symptom}"\n\nReturn ONLY a valid JSON object matching the requested schema. Do not include markdown codeblocks or extra text.`
+          }
+        ]
+      }),
+      signal: controller.signal
+    });
+
+    if (!response.ok) {
+      const body = await response.text();
+      const err = new Error(`${response.status} ${body.slice(0, 200)}`);
+      err.status = response.status;
+      throw err;
+    }
+
+    const data = await response.json();
+    let jsonText = (data.choices?.[0]?.message?.content || '').trim();
+
+    // Clean JSON markdown ticks if present
+    if (jsonText.startsWith('```json')) {
+      jsonText = jsonText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    } else if (jsonText.startsWith('```')) {
+      jsonText = jsonText.replace(/^```\s*/, '').replace(/\s*```$/, '');
+    }
+
+    if (!jsonText) throw new Error('Empty AI response');
+    return JSON.parse(jsonText);
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
+
+// @desc    Suggest OPD using Patient Profile & AI (Structured JSON + Fast Emergency Override)
 // @route   POST /api/chatbot/suggest
 // @access  Authenticated / Public
 exports.suggestOpd = async (req, res) => {
@@ -116,58 +205,47 @@ exports.suggestOpd = async (req, res) => {
     `;
 
     // ---------------------------------------------------------
-    // 5. GEMINI AI EXECUTION (DYNAMIC MULTI-MODEL FALLBACK)
+    // 5. AI EXECUTION (GROQ -> MISTRAL FALLBACK, RETRY ON 5xx)
     // ---------------------------------------------------------
-    const apiKey = process.env.GEMINI_API_KEY;
     let parsedAiResponse = null;
     let successModel = '';
+    const MAX_ATTEMPTS = 2;
 
-    if (apiKey) {
-      const genAI = new GoogleGenerativeAI(apiKey);
-      
-      // Active Google Gemini Endpoints
-      const candidateModels = [
-        'gemini-3.8-flash',
-        'gemini-3.5-flash',
-        'gemini-3.1-pro-preview',
-        'gemini-2.5-flash',
-        'gemini-2.5-pro'
-      ];
+    const providers = getProviders();
+    if (providers.length === 0) {
+      console.warn('⚠ No AI provider key set (GROQ_API_KEY / MISTRAL_API_KEY). Using rule engine.');
+    }
 
-      for (const modelName of candidateModels) {
-        try {
-          const model = genAI.getGenerativeModel({ model: modelName });
-
-          // Structured Output Prompt Engineering
-          const prompt = `
-            ${systemInstruction}
-            
-            Patient Symptoms: "${symptom}"
-            
-            Return ONLY a valid JSON object matching the requested schema. Do not include markdown codeblocks or extra text.
-          `;
-
-          const result = await model.generateContent(prompt);
-          const response = await result.response;
-          let jsonText = response.text().trim();
-          
-          // Clean JSON markdown ticks if present
-          if (jsonText.startsWith('```json')) {
-            jsonText = jsonText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-          } else if (jsonText.startsWith('```')) {
-            jsonText = jsonText.replace(/^```\s*/, '').replace(/\s*```$/, '');
-          }
-
-          if (jsonText) {
-            parsedAiResponse = JSON.parse(jsonText);
-            successModel = modelName;
-            console.log(`✅ Gemini AI Output generated using model: ${modelName}`);
+    for (const provider of providers) {
+      for (const modelName of provider.models) {
+        for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+          try {
+            parsedAiResponse = await callChatApi(provider, modelName, systemInstruction, symptom);
+            successModel = `${provider.name}:${modelName}`;
+            console.log(`✅ AI Output generated using ${successModel} (attempt ${attempt})`);
             break;
+          } catch (err) {
+            console.warn(`⚠ [${provider.name}:${modelName}] attempt ${attempt} failed: ${err.message}`);
+            // Retry the same model only for temporary server errors / timeouts
+            const retryable = err.status === 500 || err.status === 502 || err.status === 503 || err.name === 'AbortError';
+            if (!retryable) break; // 401 / 404 / 429 / bad JSON -> next model/provider
+            if (attempt < MAX_ATTEMPTS) await sleep(attempt * 1000);
           }
-        } catch (err) {
-          console.warn(`⚠ Model [${modelName}] failed: ${err.message}`);
         }
+        if (parsedAiResponse) break;
       }
+      if (parsedAiResponse) break;
+    }
+
+    // Make sure urgencyLevel is always one of the allowed values (matches ChatLog enum)
+    if (parsedAiResponse && !VALID_URGENCY.includes(parsedAiResponse.urgencyLevel)) {
+      parsedAiResponse.urgencyLevel = 'LOW';
+    }
+
+    // Make sure aiAnalysis is always a non-empty string (ChatLog requires aiResponse)
+    if (parsedAiResponse && (typeof parsedAiResponse.aiAnalysis !== 'string' || !parsedAiResponse.aiAnalysis.trim())) {
+      parsedAiResponse = null;
+      successModel = '';
     }
 
     // ---------------------------------------------------------

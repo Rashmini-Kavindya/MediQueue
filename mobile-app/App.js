@@ -3,13 +3,14 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './src/context/AuthContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import './global.css';
+import './src/i18n/translations/i18n';
 
 export default function App() {
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <AppNavigator />
-      </AuthProvider>
-    </SafeAreaProvider>
+  <AuthProvider>
+    <AppNavigator />
+  </AuthProvider>
+</SafeAreaProvider>
   );
 }
