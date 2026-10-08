@@ -10,7 +10,6 @@ export default function ConfirmNewToken({ route, navigation }) {
   const { user } = useContext(AuthContext);
   const { getFontSize } = useSettings();
 
-  // RequestNewToken එකෙන් එවූ දත්ත ලබා ගැනීම (නැතහොත් default අගයන්)
   const { selectedClinic, reason } = route.params || {
     selectedClinic: {
       id: 'OPD-02',
@@ -28,6 +27,9 @@ export default function ConfirmNewToken({ route, navigation }) {
   const [errorMessage, setErrorMessage] = useState('');
   const [isAlreadyExists, setIsAlreadyExists] = useState(false);
 
+  // API එකෙන් සාර්ථකව ලැබෙන සැබෑ ටෝකන් විස්තර මෙහි ස්ටෝර් කර ගනී
+  const [issuedTokenData, setIssuedTokenData] = useState(null);
+
   // Modal states
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -44,17 +46,20 @@ export default function ConfirmNewToken({ route, navigation }) {
         reason: reason || ''
       };
 
-      await API.post('/tokens', payload);
+      // API එකට රික්වෙස්ට් එක යැවීම
+      const response = await API.post('/tokens', payload);
 
-      // API එක සාර්ථක වූ පසු Success Modal එක පෙන්වීම
-      setShowSuccessModal(true); 
+      if (response.data && response.data.success) {
+        // සර්වර් එකෙන් එවන ලද සැබෑ ටෝකන් දත්ත ලබා ගැනීම (උදා: tokenNo, trackingCode, ආදී වශයෙන්)
+        setIssuedTokenData(response.data.data);
+        setShowSuccessModal(true);
+      }
     } catch (error) {
       console.error('Error confirming token:', error.response?.data || error.message);
       
       const serverMessage = error.response?.data?.message || error.message;
       setErrorMessage(serverMessage);
 
-      // දැනටමත් Token එකක් ඇති බවට backend එකෙන් එන error එක පරීක්ෂා කිරීම
       if (serverMessage.toLowerCase().includes('already exists') || error.response?.status === 400) {
         setIsAlreadyExists(true);
       }
@@ -83,57 +88,11 @@ export default function ConfirmNewToken({ route, navigation }) {
           Confirm New Token
         </Text>
 
-        <TouchableOpacity className="w-9 h-9 bg-blue-50 rounded-full justify-center items-center">
-          <Ionicons name="add" size={20} color="#2563eb" />
-        </TouchableOpacity>
+        <View className="w-9 h-9" />
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 30 }}>
         
-        {/* Active Token In Progress Card */}
-        <View className="bg-white border border-amber-200/80 rounded-2xl p-4 mb-4 shadow-sm relative overflow-hidden">
-          <View className="flex-row justify-between items-center mb-2.5">
-            <View className="flex-row items-center">
-              <View className="w-2 h-2 rounded-full bg-amber-500 mr-2" />
-              <Text style={{ fontSize: getFontSize(11) }} className="font-extrabold text-amber-800 tracking-wider">
-                ACTIVE TOKEN IN PROGRESS
-              </Text>
-            </View>
-            <View className="bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
-              <Text style={{ fontSize: getFontSize(10) }} className="font-bold text-amber-700">
-                Live Queue
-              </Text>
-            </View>
-          </View>
-
-          <Text style={{ fontSize: getFontSize(12) }} className="text-slate-500 mb-2">
-            You currently have an active token for:
-          </Text>
-          
-          <View className="flex-row items-center mb-4">
-            <Ionicons name="business-outline" size={18} color="#2563eb" style={{ marginRight: 6 }} />
-            <Text style={{ fontSize: getFontSize(13) }} className="font-black text-slate-900">
-              GENERAL MEDICINE — ROOM 02
-            </Text>
-          </View>
-
-          {/* Token Stats Row */}
-          <View className="flex-row justify-between bg-slate-50 border border-slate-100 rounded-xl p-3">
-            <View className="items-center flex-1 border-r border-slate-200">
-              <Text style={{ fontSize: getFontSize(10) }} className="font-bold text-slate-400 uppercase">Your Token</Text>
-              <Text style={{ fontSize: getFontSize(15) }} className="font-black text-blue-600 mt-0.5">A-127</Text>
-            </View>
-            <View className="items-center flex-1 border-r border-slate-200">
-              <Text style={{ fontSize: getFontSize(10) }} className="font-bold text-slate-400 uppercase">Now Serving</Text>
-              <Text style={{ fontSize: getFontSize(15) }} className="font-black text-slate-800 mt-0.5">A-119</Text>
-            </View>
-            <View className="items-center flex-1">
-              <Text style={{ fontSize: getFontSize(10) }} className="font-bold text-slate-400 uppercase">Ahead of You</Text>
-              <Text style={{ fontSize: getFontSize(15) }} className="font-black text-amber-600 mt-0.5">8 Ahead</Text>
-            </View>
-          </View>
-        </View>
-
         {/* New Clinic Request Card */}
         <View className="bg-white border border-slate-200/80 rounded-2xl p-4 mb-4 shadow-sm">
           <View className="flex-row justify-between items-center mb-4 pb-3 border-b border-slate-100">
@@ -163,7 +122,7 @@ export default function ConfirmNewToken({ route, navigation }) {
           <View className="flex-row justify-between items-center mb-4">
             <Text style={{ fontSize: getFontSize(12) }} className="font-bold text-slate-400 uppercase">Patient:</Text>
             <Text style={{ fontSize: getFontSize(13) }} className="font-bold text-slate-900">
-              {user?.name || 'Rashmini Silva'} <Text className="text-slate-400 font-normal">(OPD-8942)</Text>
+              {user?.name || 'Rashmini Silva'}
             </Text>
           </View>
 
@@ -181,13 +140,13 @@ export default function ConfirmNewToken({ route, navigation }) {
           {/* Estimated Token Box */}
           <View className="bg-blue-50/60 border border-blue-100 rounded-2xl p-4 items-center">
             <Text style={{ fontSize: getFontSize(11) }} className="font-extrabold text-blue-600 tracking-wider uppercase mb-1">
-              Estimated Token
+              Estimated Status
             </Text>
-            <Text style={{ fontSize: getFontSize(28) }} className="font-black text-slate-900 tracking-tight my-1">
-              D - 042
+            <Text style={{ fontSize: getFontSize(22) }} className="font-black text-slate-900 tracking-tight my-1">
+              Ready to Issue
             </Text>
             <Text style={{ fontSize: getFontSize(10) }} className="text-slate-400 text-center">
-              Final token number assigned upon immediate confirmation
+              Final token number and queue position will be assigned upon confirmation
             </Text>
           </View>
         </View>
@@ -239,7 +198,7 @@ export default function ConfirmNewToken({ route, navigation }) {
 
       </ScrollView>
 
-      {/* Success Modal */}
+      {/* Success Modal (Dynamic Data Display) */}
       {showSuccessModal && (
         <View className="absolute inset-0 bg-black/60 justify-center items-center px-4 z-50">
           <View className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-xl relative">
@@ -256,7 +215,7 @@ export default function ConfirmNewToken({ route, navigation }) {
             <View className="bg-slate-50 border border-slate-100 rounded-2xl p-3.5 mb-4 flex-row justify-between items-center">
               <View>
                 <Text className="text-xs font-black text-slate-900">{selectedClinic.name}</Text>
-                <Text className="text-[11px] text-slate-400 mt-0.5">👤 {user?.name || 'Rashmini Silva'} <Text className="text-slate-400">(OPD-0942)</Text></Text>
+                <Text className="text-[11px] text-slate-400 mt-0.5">👤 {user?.name || 'Rashmini Silva'}</Text>
               </View>
               <View className="bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
                 <Text className="text-[10px] font-bold text-emerald-700">CONFIRMED</Text>
@@ -265,19 +224,22 @@ export default function ConfirmNewToken({ route, navigation }) {
 
             <View className="bg-blue-50/50 border border-blue-100 rounded-2xl p-4 items-center mb-6">
               <Text className="text-[10px] font-extrabold text-blue-600 tracking-wider uppercase mb-1">
-                NEW OFFICIAL OPD TOKEN
+                YOUR OFFICIAL OPD TOKEN NUMBER
               </Text>
+              {/* API එකෙන් ලැබුණු සැබෑ ටෝකන් අංකය (tokenNo) හෝ ඩීෆෝල්ට් අගය පෙන්වීම */}
               <Text className="text-3xl font-black text-slate-900 tracking-tight my-1">
-                D - 042
+                {issuedTokenData?.tokenNo || issuedTokenData?.trackingCode || 'OPD-TOKEN'}
               </Text>
               <View className="flex-row items-center mt-2 space-x-4">
-                <Text className="text-[11px] text-slate-500 font-medium">🕒 Est. Wait: ~20 min</Text>
                 <Text className="text-[11px] text-slate-500 font-medium">🏢 Counter: {selectedClinic.room}</Text>
               </View>
             </View>
 
             <TouchableOpacity 
-              onPress={() => navigation.navigate('MainTabs', { screen: 'LiveQueue' })}
+              onPress={() => {
+                setShowSuccessModal(false);
+                navigation.navigate('MainTabs', { screen: 'LiveQueue' });
+              }}
               className="bg-blue-600 py-3.5 rounded-2xl flex-row justify-center items-center shadow-md mb-3"
             >
               <Text className="text-white font-bold text-sm mr-2">View in My Queue</Text>
@@ -285,7 +247,10 @@ export default function ConfirmNewToken({ route, navigation }) {
             </TouchableOpacity>
 
             <TouchableOpacity 
-              onPress={() => navigation.navigate('MainTabs', { screen: 'Home' })}
+              onPress={() => {
+                setShowSuccessModal(false);
+                navigation.navigate('MainTabs', { screen: 'Home' });
+              }}
               className="bg-white border border-slate-200 py-3.5 rounded-2xl items-center justify-center"
             >
               <Text className="text-slate-600 font-bold text-sm">Dismiss & Return Home</Text>
@@ -294,7 +259,7 @@ export default function ConfirmNewToken({ route, navigation }) {
         </View>
       )}
 
-      {/* Cancel / Error Modal (Smart Conditional Rendering) */}
+      {/* Cancel / Error Modal */}
       {showCancelModal && (
         <View className="absolute inset-0 bg-black/60 justify-center items-center px-4 z-50">
           <View className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-xl relative">
@@ -330,7 +295,7 @@ export default function ConfirmNewToken({ route, navigation }) {
               <View className="flex-1">
                 <Text className="text-sm font-bold text-slate-900">{selectedClinic.name}</Text>
                 <Text className="text-xs text-slate-400">
-                  {isAlreadyExists ? "Please check your live queue status." : `${selectedClinic.room} • ${user?.name || 'Rashmini Silva'}`}
+                  {isAlreadyExists ? "Please check your live queue status." : `${selectedClinic.room}`}
                 </Text>
               </View>
               <View className={`px-2 py-1 rounded-full ${isAlreadyExists ? 'bg-amber-50 border border-amber-200' : 'bg-red-50 border border-red-100'}`}>
@@ -340,7 +305,6 @@ export default function ConfirmNewToken({ route, navigation }) {
               </View>
             </View>
 
-            {/* If token already exists, give option to view live queue, otherwise 'Try Again' */}
             {isAlreadyExists ? (
               <TouchableOpacity 
                 onPress={() => {
@@ -354,6 +318,7 @@ export default function ConfirmNewToken({ route, navigation }) {
               </TouchableOpacity>
             ) : (
               <TouchableOpacity 
+                onResp={() => setShowCancelModal(false)}
                 onPress={() => setShowCancelModal(false)}
                 className="bg-slate-900 py-4 rounded-2xl flex-row justify-center items-center shadow-md mb-2.5"
               >
