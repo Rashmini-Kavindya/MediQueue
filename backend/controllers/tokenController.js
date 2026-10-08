@@ -5,7 +5,7 @@ const User = require('../models/User');
 const Notification = require('../models/Notification');
 const NotificationLog = require('../models/NotificationLog');
 const { generateId } = require('../utils/id');
-const axios = require('axios'); // axios ඉම්පෝට් කරන ලදී
+const { sendSms } = require('../utils/sendSms'); // Notify.lk helper (axios වෙනුවට)
 
 // 1. BOOK A TOKEN
 exports.bookToken = async (req, res) => {
@@ -135,32 +135,13 @@ exports.bookToken = async (req, res) => {
       });
       await newNotification.save();
 
-      
+      // 3. SMS එක යැවීම (Notify.lk - sendSms helper එක හරහා)
       if (userPhone) {
         try {
-          let formattedPhone = userPhone;
-          if (formattedPhone.startsWith('0')) {
-            formattedPhone = '94' + formattedPhone.substring(1);
-          }
-
-          const smsData = {
-            user_id: process.env.NOTIFY_USER_ID, 
-            api_key: process.env.NOTIFY_API_KEY,   
-            sender_id: "NotifyDEMO",            
-            to: formattedPhone,
-            message: alertMessage
-          };
-
-          const smsResponse = await axios.post('https://app.notify.lk/api/v1/send', smsData);
-          console.log('Notify.lk Response:', smsResponse.data); // Debug කිරීම සඳහා Response එක බලාගත හැක
-          
-          if (smsResponse.data.status === 'success') {
-            console.log(`SMS successfully sent to ${userPhone}`);
-          } else {
-            console.log('SMS gateway returned an error:', smsResponse.data);
-          }
+          await sendSms(userPhone, `MediQueue: ${alertMessage}`);
+          console.log(`SMS successfully sent to ${userPhone}`);
         } catch (smsErr) {
-          console.error('SMS Gateway Error:', smsErr.response?.data || smsErr.message);
+          console.error('SMS Gateway Error:', smsErr.message);
         }
       }
 
