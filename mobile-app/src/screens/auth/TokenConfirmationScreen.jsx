@@ -34,7 +34,7 @@ export default function TokenConfirmationScreen({ route, navigation }) {
 
       // Call Backend API to Book Token
       const res = await api.post(
-        '/tokens/book',
+        '/tokens',
         {
           opdId,
           patientId: role === 'caregiver' ? patientId : undefined
