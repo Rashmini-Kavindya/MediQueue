@@ -3,7 +3,7 @@ const Notification = require('../models/Notification');
 
 exports.getNotifications = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.userId || req.user.id || req.user._id;
 
     const notifications = await Notification.find({
       userId
@@ -29,16 +29,9 @@ exports.createNotification = async (req, res) => {
     const Notification = require('../models/Notification');
     const NotificationLog = require('../models/NotificationLog');
 
-    const validTypes = Notification.schema.path('type').enumValues;
-    const defaultType = validTypes && validTypes.length > 0 ? validTypes[0] : 'queue';
-
-    // NotificationLog Schema එකේ තියෙන valid channel enums ටික auto ගන්නවා
-    const validChannels = NotificationLog.schema.path('channel').enumValues;
-    const defaultChannel = validChannels && validChannels.length > 0 ? validChannels[0] : 'SMS';
-
     const sampleNotificationId = 'NOTIF-' + Date.now();
     const sampleTokenId = 'TKN-' + Math.floor(1000 + Math.random() * 9000);
-    const targetUserId = req.user ? (req.user.id || req.user._id || req.user.userId) : req.body.userId;
+    const targetUserId = req.user ? (req.user.userId || req.user.id || req.user._id) : req.body.userId;
 
     // 1. Notification එක Save කිරීම
     const newNotification = new Notification({
@@ -46,9 +39,12 @@ exports.createNotification = async (req, res) => {
       tokenId: sampleTokenId,
       userId: targetUserId,
       title: req.body.title || 'Test Alert',
+      room: req.body.room, // <-- මෙතනට room එක එකතු කළා
       message: req.body.message || 'This is a test notification',
-      type: defaultType,
-      isRead: false
+      type: 'update',
+      channel: 'app',
+      isRead: false,
+      sentAt: new Date()
     });
 
     await newNotification.save();
@@ -59,7 +55,7 @@ exports.createNotification = async (req, res) => {
     await NotificationLog.create({
       notificationId: sampleNotificationId,
       userId: targetUserId,
-      channel: defaultChannel, // Schema එකේ තියෙන නිවැරදි enum එක Auto යොදනු ලබයි
+      channel: 'app',
       status: 'delivered',
       latencyMs: Date.now() - startTime + 15,
       sentAt: new Date()
@@ -82,7 +78,7 @@ exports.createNotification = async (req, res) => {
 exports.markAsRead = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.userId;
+    const userId = req.user.userId || req.user.id || req.user._id;
 
     const notification = await Notification.findOne({
       notificationId: id,
@@ -118,7 +114,7 @@ exports.markAsRead = async (req, res) => {
 exports.deleteNotification = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.userId;
+    const userId = req.user.userId || req.user.id || req.user._id;
 
     const notification = await Notification.findOneAndDelete({
       notificationId: id,
