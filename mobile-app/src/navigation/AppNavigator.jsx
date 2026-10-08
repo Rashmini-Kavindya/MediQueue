@@ -1,3 +1,4 @@
+
 import React, { useContext } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
@@ -11,24 +12,30 @@ import RequestNewToken from '../screens/patient/RequestNewToken';
 import ConfirmNewToken from '../screens/patient/ConfirmNewToken';
 import ChatbotScreen from '../screens/patient/ChatbotScreen';
 
+import CaregiverNavigator from './CaregiverNavigator';
+
 const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
-  const { user, loading } = useContext(AuthContext);
+  const { user, userRole, loading } = useContext(AuthContext);
 
   if (loading) {
     return (
       <View className="flex-1 bg-slate-900 justify-center items-center">
-        <ActivityIndicator size="large" color="#0891b2" />
+        <ActivityIndicator
+          size="large"
+          color="#0891b2"
+        />
       </View>
     );
   }
 
-  const role = user?.role;
+  const role = userRole || user?.role;
 
   // User කෙනෙක් Log වී ඇත්නම් එයා Staff / Doctor / Admin ද යන්න පරීක්ෂා කිරීම
   const isStaffUser = !!user && ['staff', 'doctor', 'admin'].includes(role);
   const isPatient = !!user && role === 'patient';
+  const isCaregiver = !!user && role === 'caregiver';
 
   return (
     <NavigationContainer>
@@ -47,8 +54,11 @@ export default function AppNavigator() {
           <Stack.Screen name="Chatbot" component={ChatbotScreen} />
 
         </Stack.Navigator>
+      ) : isCaregiver ? (
+        // 4. Caregiver - Caregiver Navigator
+        <CaregiverNavigator />
       ) : (
-        // 4. Caregiver (දැනට Patient tabs)
+        // Fallback navigation
         <TabNavigator />
       )}
     </NavigationContainer>
