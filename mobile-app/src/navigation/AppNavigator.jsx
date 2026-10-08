@@ -1,11 +1,16 @@
 import React, { useContext } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AuthContext } from '../context/AuthContext';
 
 import AuthNavigator from './AuthNavigator';
-// import PatientNavigator from './PatientNavigator';
-import StaffNavigator from './StaffNavigator'; // Staff Navigator එක Import කළා
+import StaffNavigator from './StaffNavigator';
+import TabNavigator from './TabNavigator'; // Patient Bottom Tab Navigator
+import RequestNewToken from '../screens/patient/RequestNewToken';
+import ConfirmNewToken from '../screens/patient/ConfirmNewToken';
+
+const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
   const { user, loading } = useContext(AuthContext);
@@ -18,8 +23,11 @@ export default function AppNavigator() {
     );
   }
 
+  const role = user?.role;
+
   // User කෙනෙක් Log වී ඇත්නම් එයා Staff / Doctor / Admin ද යන්න පරීක්ෂා කිරීම
-  const isStaffUser = user && ['staff', 'doctor', 'admin'].includes(user.role);
+  const isStaffUser = !!user && ['staff', 'doctor', 'admin'].includes(role);
+  const isPatient = !!user && role === 'patient';
 
   return (
     <NavigationContainer>
@@ -27,12 +35,18 @@ export default function AppNavigator() {
         // 1. Log වී නැත -> Auth Stack (Login / Register / StaffLogin)
         <AuthNavigator />
       ) : isStaffUser ? (
-        // 2. Log වී ඇති Staff කෙනෙක් -> Staff Portal
+        // 2. Log වී ඇති Staff / Doctor / Admin -> Staff Portal
         <StaffNavigator />
+      ) : isPatient ? (
+        // 3. Patient -> Bottom tabs + token request screens
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="MainTabs" component={TabNavigator} />
+          <Stack.Screen name="RequestNewToken" component={RequestNewToken} />
+          <Stack.Screen name="ConfirmNewToken" component={ConfirmNewToken} />
+        </Stack.Navigator>
       ) : (
-        // 3. Log වී ඇති Patient / Caregiver -> Patient Portal (දැනට comment කර ඇත)
-        // <PatientNavigator />
-        null
+        // 4. Caregiver (දැනට Patient tabs). Caregiver navigator එක ඊළඟට සෙට් කරමු
+        <TabNavigator />
       )}
     </NavigationContainer>
   );

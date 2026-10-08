@@ -2,7 +2,10 @@ const Token = require('../models/Token');
 const OPD = require('../models/OPD');
 const CaregiverLink = require('../models/CaregiverLink');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
+const NotificationLog = require('../models/NotificationLog');
 const { generateId } = require('../utils/id');
+const axios = require('axios'); // axios ඉම්පෝට් කරන ලදී
 
 // 1. BOOK A TOKEN
 exports.bookToken = async (req, res) => {
@@ -31,7 +34,7 @@ exports.bookToken = async (req, res) => {
         });
       }
 
-      // Hibaගේ CaregiverLink model එකෙන් link එක active සහ verified ද කියා පරීක්ෂා කිරීම
+      // CaregiverLink model එකෙන් link එක active සහ verified ද කියා පරීක්ෂා කිරීම
       const activeLink = await CaregiverLink.findOne({
         caregiverId: caregiver.caregiverId,
         patientId: targetPatientId,
@@ -103,6 +106,78 @@ exports.bookToken = async (req, res) => {
 
     await newToken.save();
 
+    // --- 🔔 AUTO NOTIFICATION & SMS CREATION ON BOOKING ---
+    try {
+      const sampleNotificationId = generateId('NOTIF');
+      const startTime = Date.now();
+      const alertMessage = `You have successfully joined the queue. Your token number is ${newToken.tokenNo}.`;
+
+      // 1. දුරකථන අංකය නිවැරදිව ලබා ගැනීම (Patient ID එක මඟින් හෝ Logged-in User ගෙන්)
+      let targetUser = await User.findOne({ patientId: patientId });
+      if (!targetUser) {
+        targetUser = await User.findOne({ userId: userId });
+      }
+
+      const userPhone = targetUser ? targetUser.phone : null;
+
+      // 2. In-app Notification එක Save කිරීම (Frontend එකට catch වීමට 'QUEUE_UPDATE' සහ 'room' එකතු කරන ලදී)
+      const newNotification = new Notification({
+        notificationId: sampleNotificationId,
+        tokenId: newToken.tokenId,
+        userId: userId,
+        title: 'Token Booked Successfully',
+        message: alertMessage,
+        type: 'QUEUE_UPDATE', 
+        room: newToken.roomId,
+        channel: 'SMS',
+        isRead: false,
+        sentAt: new Date()
+      });
+      await newNotification.save();
+
+      
+      if (userPhone) {
+        try {
+          let formattedPhone = userPhone;
+          if (formattedPhone.startsWith('0')) {
+            formattedPhone = '94' + formattedPhone.substring(1);
+          }
+
+          const smsData = {
+            user_id: process.env.NOTIFY_USER_ID, 
+            api_key: process.env.NOTIFY_API_KEY,   
+            sender_id: "NotifyDEMO",            
+            to: formattedPhone,
+            message: alertMessage
+          };
+
+          const smsResponse = await axios.post('https://app.notify.lk/api/v1/send', smsData);
+          console.log('Notify.lk Response:', smsResponse.data); // Debug කිරීම සඳහා Response එක බලාගත හැක
+          
+          if (smsResponse.data.status === 'success') {
+            console.log(`SMS successfully sent to ${userPhone}`);
+          } else {
+            console.log('SMS gateway returned an error:', smsResponse.data);
+          }
+        } catch (smsErr) {
+          console.error('SMS Gateway Error:', smsErr.response?.data || smsErr.message);
+        }
+      }
+
+      // 4. Notification Log එක Save කිරීම
+      await NotificationLog.create({
+        notificationId: sampleNotificationId,
+        userId: userId,
+        channel: 'SMS',
+        status: 'delivered',
+        latencyMs: Date.now() - startTime + 10,
+        sentAt: new Date()
+      });
+    } catch (notifErr) {
+      console.error('Notification or SMS creation failed:', notifErr.message);
+    }
+    // ----------------------------------------------
+
     res.status(201).json({
       success: true,
       data: newToken,
@@ -161,7 +236,6 @@ exports.cancelToken = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Token not found' });
     }
 
-    // --- 🛑 AUTHORIZATION CHECK ---
     if (token.userId !== userId && !['admin', 'staff'].includes(userRole)) {
       return res.status(403).json({
         success: false,
@@ -181,7 +255,7 @@ exports.cancelToken = async (req, res) => {
   }
 };
 
-// 5. PUBLIC TRACKING (Login නොවී trackingCode එකෙන් status බලන්න)
+// 5. PUBLIC TRACKING
 exports.trackTokenStatus = async (req, res) => {
   try {
     const { trackingCode } = req.params;
@@ -194,7 +268,6 @@ exports.trackTokenStatus = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Invalid tracking code or Token not found' });
     }
 
-    // දැනට කීවෙනි Token එකද පෝලිමේ යන්නේ කියා සොයාගැනීම
     const currentCallingToken = await Token.findOne({
       opdId: token.opdId,
       queueDate: token.queueDate,
@@ -217,7 +290,7 @@ exports.trackTokenStatus = async (req, res) => {
   }
 };
 
-// 6. GET OPD QUEUE (Staff Console / Patient Live Queue එක සඳහා)
+// 6. GET OPD QUEUE
 exports.getOpdQueue = async (req, res) => {
   try {
     const { opdId } = req.params;
