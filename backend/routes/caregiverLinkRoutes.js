@@ -1,3 +1,4 @@
+
 const express = require('express');
 
 const router = express.Router();
@@ -15,6 +16,27 @@ const {
 
 // All caregiver routes require login
 router.use(verifyToken);
+
+// Caregiver profile management
+router.use(
+  '/account',
+  require('./caregiverProfileSettingsRoutes')
+);
+
+
+// ======================================================
+// CAREGIVER PATIENT CONSENT VERIFICATION
+//
+// POST /api/links/verification/start
+// POST /api/links/verification/verify
+//
+// Must remain ABOVE /:id routes
+// ======================================================
+
+router.use(
+  '/verification',
+  require('./caregiverOtpRoutes')
+);
 
 
 // ======================================================
@@ -60,6 +82,9 @@ router.get(
 // ======================================================
 // CREATE LINK
 // POST /api/links
+//
+// Direct creation is disabled.
+// Patient consent OTP verification is now required.
 // ======================================================
 
 router.post(
@@ -69,7 +94,15 @@ router.post(
     'caregiver'
   ]),
 
-  caregiverLinkController.linkPatient
+  (req, res) => {
+    return res.status(403).json({
+      success: false,
+      message:
+        'Patient consent verification is required. ' +
+        'Use /api/links/verification/start and ' +
+        '/api/links/verification/verify.'
+    });
+  }
 );
 
 

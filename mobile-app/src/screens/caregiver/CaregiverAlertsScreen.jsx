@@ -1,507 +1,351 @@
-import React, {
-  useCallback,
-  useState
-} from 'react';
-
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
   ScrollView,
   ActivityIndicator,
-  StyleSheet
+  StyleSheet,
+  TouchableOpacity
 } from 'react-native';
-
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
+import caregiverUiLabels from './caregiverUiLabels';
 import { useFocusEffect } from '@react-navigation/native';
 
 import CaregiverHeader from '../../components/caregiver/CaregiverHeader';
 import CaregiverBottomNav from '../../components/caregiver/CaregiverBottomNav';
-
 import {
   getLinkedPatients,
-  getLinkedPatientNotifications
+  getLinkedPatientNotifications,
+  getMyNotifications,
+  getUserPreferences
 } from '../../services/caregiverApi';
 
+const QUEUE_TYPES = new Set([
+  'near', 'called', 'QUEUE_UPDATE', 'YOUR_TURN', 'TURN_NEAR'
+]);
 
-export default function CaregiverAlertsScreen({
-  navigation
-}) {
-  const [notifications, setNotifications] =
-    useState([]);
+// Safeguard for already-fetched data. Actual privacy protection MUST
+// be enforced by the server's linked-patient notification endpoint.
+const isSensitiveConsentAlert = (notification) => {
+  const text = `${notification.title || ''} ${notification.message || ''}`;
+  return /caregiver link|consent code|verification code|\botp\b/i.test(text);
+};
 
-  const [loading, setLoading] =
-    useState(true);
+const isQueueAlert = (notification) =>
+  notification.source === 'patient-queue' ||
+  QUEUE_TYPES.has(notification.type) ||
+  (notification.type === 'update' &&
+    /queue|token|turn|patient called/i.test(notification.title || ''));
 
+const getTitle = (notification, L) => {
+  if (notification.title) return notification.title;
+  if (notification.type === 'near' || notification.type === 'TURN_NEAR')
+    return L.turnNear;
+  if (notification.type === 'called' || notification.type === 'YOUR_TURN')
+    return L.patientCalled;
+  return isQueueAlert(notification) ? L.queueUpdate : L.accountUpdate;
+};
 
-  const loadAlerts = async () => {
-    try {
+const getIcon = (notification) => {
+  if (/linked successfully/i.test(notification.title || ''))
+    return 'checkmark-circle-outline';
+  if (notification.type === 'called' || notification.type === 'YOUR_TURN')
+    return 'megaphone-outline';
+  if (notification.type === 'near' || notification.type === 'TURN_NEAR')
+    return 'time-outline';
+  return 'notifications-outline';
+};
 
-      const linksResponse =
-        await getLinkedPatients();
-
-      const activeLinks =
-        (linksResponse?.data || [])
-          .filter(
-            link =>
-              link.verified &&
-              link.status === 'active'
-          );
-
-
-      const responses =
-        await Promise.all(
-          activeLinks.map(
-            link =>
-              getLinkedPatientNotifications(
-                link.linkId
-              )
-          )
-        );
-
-
-      const allNotifications =
-        responses.flatMap(
-          response =>
-            response?.data?.notifications ||
-            []
-        );
-
-
-      allNotifications.sort(
-        (a, b) =>
-          new Date(b.sentAt) -
-          new Date(a.sentAt)
-      );
-
-
-      setNotifications(
-        allNotifications
-      );
-
-    } catch (error) {
-
-      setNotifications([]);
-
-    } finally {
-
-      setLoading(false);
-
-    }
-  };
-
+export default function CaregiverAlertsScreen({ navigation }) {
+  const { i18n } = useTranslation();
+  const L = caregiverUiLabels[i18n.resolvedLanguage || i18n.language?.split('-')[0]] || caregiverUiLabels.en;
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [selectedFilter, setSelectedFilter] = useState('All');
 
   useFocusEffect(
     useCallback(() => {
+      let active = true;
 
-      setLoading(true);
+      const loadAlerts = async () => {
+        if (active) {
+          setLoading(true);
+          setErrorMessage('');
+        }
+
+        const ownTask = getMyNotifications();
+        const linkedTask = getLinkedPatients();
+        const prefsTask = getUserPreferences();
+        const [ownResult, linksResult, prefsResult] = await Promise.allSettled([
+          ownTask, linkedTask, prefsTask
+        ]);
+        // Queue-alert preference controls caregiver's queue feed.
+        // Personal account/security notifications remain available.
+        const queueAppEnabled = prefsResult.status !== 'fulfilled' ||
+          (prefsResult.value?.data?.channels || ['app']).includes('app');
+
+        const caregiverNotifications = ownResult.status === 'fulfilled'
+          ? (ownResult.value?.data || []).map((n) => ({
+              ...n,
+              source: 'caregiver'
+            }))
+          : [];
+
+        let queueNotifications = [];
+        let queueLoadFailed = linksResult.status === 'rejected';
+
+        if (linksResult.status === 'fulfilled' && queueAppEnabled) {
+          const activeLinks = (linksResult.value?.data || []).filter(
+            (link) => link.verified && link.status === 'active'
+          );
+
+          // This endpoint is queue-only after applying the backend fix.
+          const results = await Promise.allSettled(
+            activeLinks.map((link) =>
+              getLinkedPatientNotifications(link.linkId)
+            )
+          );
+
+          queueNotifications = results.flatMap((result) => {
+            if (result.status !== 'fulfilled') {
+              queueLoadFailed = true;
+              return [];
+            }
+
+            const data = result.value?.data || {};
+            const patient = data.patient || {};
+            const patientName = [patient.firstName, patient.lastName]
+              .filter(Boolean)
+              .join(' ');
+
+            return (data.notifications || [])
+              .filter((n) => !isSensitiveConsentAlert(n))
+              .map((n) => ({
+                ...n,
+                source: 'patient-queue',
+                patientName
+              }));
+          });
+        }
+
+        if (active) {
+          const all = [...caregiverNotifications, ...queueNotifications];
+          const unique = Array.from(new Map(
+            all.map((n) => [n.notificationId || n._id, n])
+          ).values());
+          unique.sort((a, b) =>
+            new Date(b.sentAt || b.createdAt || 0) -
+            new Date(a.sentAt || a.createdAt || 0)
+          );
+
+          setNotifications(unique);
+          if (ownResult.status === 'rejected' || queueLoadFailed) {
+            setErrorMessage(L.loadingAlertsError);
+          }
+          setLoading(false);
+        }
+      };
+
       loadAlerts();
-
+      return () => { active = false; };
     }, [])
   );
 
-
-  const getIcon = (type) => {
-
-    if (type === 'called') {
-      return 'megaphone-outline';
-    }
-
-    if (type === 'near') {
-      return 'time-outline';
-    }
-
-    return 'notifications-outline';
-  };
-
+  const visibleNotifications = useMemo(() => {
+    if (selectedFilter === 'Queue')
+      return notifications.filter(isQueueAlert);
+    if (selectedFilter === 'Updates')
+      return notifications.filter((item) => !isQueueAlert(item));
+    return notifications;
+  }, [notifications, selectedFilter]);
 
   return (
     <View style={styles.outer}>
-
       <View style={styles.screen}>
-
-        <CaregiverHeader
-          title="Alerts"
-          navigation={navigation}
-        />
-
+        <CaregiverHeader title={L.alerts} navigation={navigation} />
 
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
-
-          <Text style={styles.pageTitle}>
-            Caregiver Alerts
-          </Text>
-
+          <Text style={styles.pageTitle}>{L.caregiverAlerts}</Text>
           <Text style={styles.pageSubtitle}>
-            Queue updates and notifications for your linked patients
+            {L.alertsSubtitle}
           </Text>
-
 
           <View style={styles.filterRow}>
-
-            <View style={styles.activeFilter}>
-              <Text style={styles.activeFilterText}>
-                All
-              </Text>
-            </View>
-
-            <View style={styles.filter}>
-              <Text style={styles.filterText}>
-                Queue
-              </Text>
-            </View>
-
-            <View style={styles.filter}>
-              <Text style={styles.filterText}>
-                Updates
-              </Text>
-            </View>
-
+            {['All', 'Queue', 'Updates'].map((filter) => {
+              const selected = selectedFilter === filter;
+              return (
+                <TouchableOpacity
+                  key={filter === 'All' ? L.all : filter === 'Queue' ? L.queue : L.updates}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  onPress={() => setSelectedFilter(filter)}
+                  style={selected ? styles.activeFilter : styles.filter}
+                >
+                  <Text style={selected ? styles.activeFilterText : styles.filterText}>
+                    {filter === 'All' ? L.all : filter === 'Queue' ? L.queue : L.updates}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
 
-
-          {loading ? (
-
-            <View style={styles.loading}>
-              <ActivityIndicator
-                size="large"
-                color="#155EEF"
-              />
-            </View>
-
-          ) : notifications.length === 0 ? (
-
-            <View style={styles.emptyCard}>
-
-              <View style={styles.emptyIcon}>
-
-                <Ionicons
-                  name="notifications-outline"
-                  size={25}
-                  color="#155EEF"
-                />
-
-              </View>
-
-              <Text style={styles.emptyTitle}>
-                No alerts yet
-              </Text>
-
-              <Text style={styles.emptyText}>
-                Important queue updates and linked patient notifications will appear here.
-              </Text>
-
-            </View>
-
-          ) : (
-
-            notifications.map(
-              (notification) => (
-
-                <View
-                  key={
-                    notification.notificationId
-                  }
-                  style={
-                    notification.isRead
-                      ? styles.notificationCard
-                      : styles.unreadCard
-                  }
-                >
-
-                  <View style={styles.notificationIcon}>
-
-                    <Ionicons
-                      name={
-                        getIcon(
-                          notification.type
-                        )
-                      }
-                      size={18}
-                      color="#155EEF"
-                    />
-
-                  </View>
-
-
-                  <View style={styles.notificationBody}>
-
-                    <View style={styles.notificationTop}>
-
-                      <Text style={styles.notificationTitle}>
-                        {notification.type === 'near'
-                          ? 'Your Turn is Near'
-                          : notification.type === 'called'
-                          ? 'Patient Called'
-                          : 'Queue Update'}
-                      </Text>
-
-                      {!notification.isRead && (
-                        <View style={styles.unreadDot} />
-                      )}
-
-                    </View>
-
-
-                    <Text style={styles.notificationMessage}>
-                      {notification.message}
-                    </Text>
-
-
-                    <Text style={styles.notificationTime}>
-                      {notification.sentAt
-                        ? new Date(
-                            notification.sentAt
-                          ).toLocaleString()
-                        : ''}
-                    </Text>
-
-                  </View>
-
-                </View>
-
-              )
-            )
+          {!!errorMessage && !loading && (
+            <Text style={styles.errorText}>{errorMessage}</Text>
           )}
 
-        </ScrollView>
+          {loading ? (
+            <View style={styles.loading}>
+              <ActivityIndicator size="large" color="#155EEF" />
+            </View>
+          ) : visibleNotifications.length === 0 ? (
+            <View style={styles.emptyCard}>
+              <View style={styles.emptyIcon}>
+                <Ionicons name="notifications-outline" size={25} color="#155EEF" />
+              </View>
+              <Text style={styles.emptyTitle}>{L.noAlerts}</Text>
+              <Text style={styles.emptyText}>
+                {selectedFilter === 'All'
+                  ? L.alertsEmpty
+                  : (selectedFilter === 'Queue' ? L.queueEmpty : L.updatesEmpty)}
+              </Text>
+            </View>
+          ) : (
+            visibleNotifications.map((notification, index) => (
+              <View
+                key={notification.notificationId || notification._id || index}
+                style={notification.isRead ? styles.notificationCard : styles.unreadCard}
+              >
+                <View style={styles.notificationIcon}>
+                  <Ionicons
+                    name={getIcon(notification)}
+                    size={18}
+                    color="#155EEF"
+                  />
+                </View>
 
+                <View style={styles.notificationBody}>
+                  <View style={styles.notificationTop}>
+                    <Text style={styles.notificationTitle}>
+                      {getTitle(notification, L)}
+                    </Text>
+                    {!notification.isRead && <View style={styles.unreadDot} />}
+                  </View>
+
+                  {!!notification.patientName && (
+                    <Text style={styles.patientLabel}>
+                      {L.patientLabel}{notification.patientName}
+                    </Text>
+                  )}
+
+                  <Text style={styles.notificationMessage}>
+                    {notification.message}
+                  </Text>
+                  <Text style={styles.notificationTime}>
+                    {notification.sentAt
+                      ? new Date(notification.sentAt).toLocaleString()
+                      : ''}
+                  </Text>
+                </View>
+              </View>
+            ))
+          )}
+        </ScrollView>
 
         <CaregiverBottomNav
           navigation={navigation}
           activeRoute="CaregiverAlerts"
         />
-
       </View>
     </View>
   );
 }
 
-
 const styles = StyleSheet.create({
-  outer: {
-    flex: 1,
-    backgroundColor: '#EEF1F5'
-  },
-
+  outer: { flex: 1, backgroundColor: '#EEF1F5' },
   screen: {
-    flex: 1,
-
-    width: '100%',
-    maxWidth: 430,
-
-    alignSelf: 'center',
-
-    backgroundColor: '#F8F7FC'
+    flex: 1, width: '100%', maxWidth: 430,
+    alignSelf: 'center', backgroundColor: '#F8F7FC'
   },
-
-  scroll: {
-    flex: 1
-  },
-
-  content: {
-    padding: 18,
-    paddingBottom: 30
-  },
-
-  pageTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-
-    color: '#111827'
-  },
-
+  scroll: { flex: 1 },
+  content: { padding: 18, paddingBottom: 30 },
+  pageTitle: { fontSize: 20, fontWeight: '800', color: '#111827' },
   pageSubtitle: {
-    marginTop: 4,
-
-    fontSize: 11,
-    lineHeight: 17,
-
+    marginTop: 4, fontSize: 11, lineHeight: 17,
     color: '#64748B'
   },
-
   filterRow: {
-    flexDirection: 'row',
-
-    marginTop: 18,
-    marginBottom: 15
+    flexDirection: 'row', marginTop: 18, marginBottom: 15
   },
-
   activeFilter: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-
-    borderRadius: 18,
-
-    backgroundColor: '#155EEF',
-
-    marginRight: 7
+    paddingHorizontal: 14, paddingVertical: 7,
+    borderRadius: 18, backgroundColor: '#155EEF', marginRight: 7
   },
-
-  activeFilterText: {
-    color: '#FFFFFF',
-
-    fontSize: 10,
-    fontWeight: '700'
-  },
-
+  activeFilterText: { color: '#FFFFFF', fontSize: 10, fontWeight: '700' },
   filter: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-
-    borderRadius: 18,
-
-    backgroundColor: '#FFFFFF',
-
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-
-    marginRight: 7
+    paddingHorizontal: 14, paddingVertical: 7, borderRadius: 18,
+    backgroundColor: '#FFFFFF', borderWidth: 1,
+    borderColor: '#E2E8F0', marginRight: 7
   },
-
-  filterText: {
-    color: '#64748B',
-
-    fontSize: 10,
-    fontWeight: '600'
+  filterText: { color: '#64748B', fontSize: 10, fontWeight: '600' },
+  loading: { paddingVertical: 80 },
+  errorText: {
+    color: '#B42318', marginBottom: 12,
+    fontSize: 12, lineHeight: 18
   },
-
-  loading: {
-    paddingVertical: 80
-  },
-
   emptyCard: {
-    marginTop: 15,
-
-    paddingVertical: 34,
-    paddingHorizontal: 25,
-
-    alignItems: 'center',
-
-    backgroundColor: '#FFFFFF',
-
-    borderRadius: 17,
-
-    borderWidth: 1,
-    borderColor: '#E2E8F0'
+    marginTop: 15, paddingVertical: 34, paddingHorizontal: 25,
+    alignItems: 'center', backgroundColor: '#FFFFFF',
+    borderRadius: 17, borderWidth: 1, borderColor: '#E2E8F0'
   },
-
   emptyIcon: {
-    width: 48,
-    height: 48,
-
-    borderRadius: 24,
-
-    alignItems: 'center',
-    justifyContent: 'center',
-
+    width: 48, height: 48, borderRadius: 24,
+    alignItems: 'center', justifyContent: 'center',
     backgroundColor: '#EEF4FF'
   },
-
   emptyTitle: {
-    marginTop: 13,
-
-    fontSize: 15,
-    fontWeight: '800',
-
-    color: '#111827'
+    marginTop: 13, fontSize: 15,
+    fontWeight: '800', color: '#111827'
   },
-
   emptyText: {
-    marginTop: 6,
-
-    color: '#64748B',
-
-    fontSize: 11,
-    lineHeight: 17,
-
-    textAlign: 'center'
+    marginTop: 6, color: '#64748B',
+    fontSize: 11, lineHeight: 17, textAlign: 'center'
   },
-
   notificationCard: {
-    flexDirection: 'row',
-
-    padding: 14,
-    marginBottom: 10,
-
-    borderRadius: 14,
-
-    backgroundColor: '#FFFFFF',
-
-    borderWidth: 1,
-    borderColor: '#E6EAF0'
+    flexDirection: 'row', padding: 14, marginBottom: 10,
+    borderRadius: 14, backgroundColor: '#FFFFFF',
+    borderWidth: 1, borderColor: '#E6EAF0'
   },
-
   unreadCard: {
-    flexDirection: 'row',
-
-    padding: 14,
-    marginBottom: 10,
-
-    borderRadius: 14,
-
-    backgroundColor: '#F5F8FF',
-
-    borderWidth: 1,
-    borderColor: '#C9D8FF'
+    flexDirection: 'row', padding: 14, marginBottom: 10,
+    borderRadius: 14, backgroundColor: '#F5F8FF',
+    borderWidth: 1, borderColor: '#C9D8FF'
   },
-
   notificationIcon: {
-    width: 36,
-    height: 36,
-
-    borderRadius: 10,
-
-    alignItems: 'center',
-    justifyContent: 'center',
-
+    width: 36, height: 36, borderRadius: 10,
+    alignItems: 'center', justifyContent: 'center',
     backgroundColor: '#EAF1FF'
   },
-
-  notificationBody: {
-    flex: 1,
-    marginLeft: 11
-  },
-
+  notificationBody: { flex: 1, marginLeft: 11 },
   notificationTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row', alignItems: 'center',
     justifyContent: 'space-between'
   },
-
-  notificationTitle: {
-    color: '#111827',
-
-    fontSize: 12,
-    fontWeight: '800'
-  },
-
+  notificationTitle: { flex: 1, color: '#111827', fontSize: 12, fontWeight: '800' },
   unreadDot: {
-    width: 7,
-    height: 7,
-
-    borderRadius: 4,
-
-    backgroundColor: '#155EEF'
+    width: 7, height: 7, borderRadius: 4,
+    backgroundColor: '#155EEF', marginLeft: 8
   },
-
+  patientLabel: {
+    marginTop: 4, color: '#155EEF', fontSize: 10, fontWeight: '700'
+  },
   notificationMessage: {
-    marginTop: 5,
-
-    color: '#475569',
-
-    fontSize: 10,
-    lineHeight: 16
+    marginTop: 5, color: '#475569', fontSize: 10, lineHeight: 16
   },
-
-  notificationTime: {
-    marginTop: 7,
-
-    color: '#94A3B8',
-
-    fontSize: 8
-  }
+  notificationTime: { marginTop: 7, color: '#94A3B8', fontSize: 8 }
 });
