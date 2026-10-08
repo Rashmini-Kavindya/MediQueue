@@ -9,6 +9,7 @@ import StaffNavigator from './StaffNavigator';
 import TabNavigator from './TabNavigator'; // Patient Bottom Tab Navigator
 import RequestNewToken from '../screens/patient/RequestNewToken';
 import ConfirmNewToken from '../screens/patient/ConfirmNewToken';
+import ChatbotScreen from '../screens/patient/ChatbotScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -43,6 +44,8 @@ export default function AppNavigator() {
           <Stack.Screen name="MainTabs" component={TabNavigator} />
           <Stack.Screen name="RequestNewToken" component={RequestNewToken} />
           <Stack.Screen name="ConfirmNewToken" component={ConfirmNewToken} />
+          <Stack.Screen name="Chatbot" component={ChatbotScreen} />
+
         </Stack.Navigator>
       ) : (
         // 4. Caregiver (දැනට Patient tabs). Caregiver navigator එක ඊළඟට සෙට් කරමු
