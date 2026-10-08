@@ -1,9 +1,11 @@
 const express = require('express');
+
 const router = express.Router();
 
-const caregiverLinkController = require(
-  '../controllers/caregiverLinkController'
-);
+const caregiverLinkController =
+  require(
+    '../controllers/caregiverLinkController'
+  );
 
 const {
   verifyToken,
@@ -11,72 +13,143 @@ const {
 } = require('../middleware/auth');
 
 
-// All caregiver-link routes require authentication
+// All caregiver routes require login
 router.use(verifyToken);
 
 
 // ======================================================
-// CREATE - Link a patient
+// PATIENT NAME SUGGESTIONS
+//
+// IMPORTANT:
+// Must stay ABOVE /:id routes
+//
+// GET /api/links/patient-suggestions
+// ======================================================
+
+router.get(
+  '/patient-suggestions',
+
+  roleGuard([
+    'caregiver'
+  ]),
+
+  caregiverLinkController.getPatientSuggestions
+);
+
+
+// ======================================================
+// SEARCH PATIENT
+//
+// IMPORTANT:
+// Must stay ABOVE /:id routes
+//
+// GET /api/links/search-patient
+// ======================================================
+
+router.get(
+  '/search-patient',
+
+  roleGuard([
+    'caregiver'
+  ]),
+
+  caregiverLinkController.searchPatient
+);
+
+
+// ======================================================
+// CREATE LINK
 // POST /api/links
 // ======================================================
+
 router.post(
   '/',
-  roleGuard(['caregiver']),
+
+  roleGuard([
+    'caregiver'
+  ]),
+
   caregiverLinkController.linkPatient
 );
 
 
 // ======================================================
-// READ - View caregiver's linked patients
+// GET LINKED PATIENTS
 // GET /api/links
 // ======================================================
+
 router.get(
   '/',
-  roleGuard(['caregiver']),
+
+  roleGuard([
+    'caregiver'
+  ]),
+
   caregiverLinkController.getLinkedPatients
 );
 
 
 // ======================================================
-// READ - Linked patient's token + live queue
+// GET LINKED PATIENT STATUS
 // GET /api/links/:id/status
 // ======================================================
+
 router.get(
   '/:id/status',
-  roleGuard(['caregiver']),
+
+  roleGuard([
+    'caregiver'
+  ]),
+
   caregiverLinkController.getLinkedPatientStatus
 );
 
 
 // ======================================================
-// READ - Linked patient's notifications
+// GET LINKED PATIENT NOTIFICATIONS
 // GET /api/links/:id/notifications
 // ======================================================
+
 router.get(
   '/:id/notifications',
-  roleGuard(['caregiver']),
-  caregiverLinkController.getLinkedPatientNotifications
+
+  roleGuard([
+    'caregiver'
+  ]),
+
+  caregiverLinkController
+    .getLinkedPatientNotifications
 );
 
 
 // ======================================================
-// UPDATE - Edit caregiver relationship
+// UPDATE RELATIONSHIP
 // PUT /api/links/:id
 // ======================================================
+
 router.put(
   '/:id',
-  roleGuard(['caregiver']),
+
+  roleGuard([
+    'caregiver'
+  ]),
+
   caregiverLinkController.updateRelationship
 );
 
 
 // ======================================================
-// DELETE - Unlink patient
+// DELETE LINK
 // DELETE /api/links/:id
 // ======================================================
+
 router.delete(
   '/:id',
-  roleGuard(['caregiver']),
+
+  roleGuard([
+    'caregiver'
+  ]),
+
   caregiverLinkController.unlinkPatient
 );
 
