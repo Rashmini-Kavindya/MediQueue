@@ -2,33 +2,23 @@ const express = require('express');
 const router = express.Router();
 
 const { verifyToken, roleGuard } = require('../middleware/auth');
-const { callNext, holdToken, skipToken, recallToken } = require('../controllers/queueController');
+const {
+  callNext,
+  holdToken,
+  skipToken,
+  recallToken,
+  getMyQueueStatus,
+  getLiveQueue
+} = require('../controllers/queueController');
 
-router.post(
-  '/call-next',
-  verifyToken,
-  roleGuard(['staff', 'admin']),
-  callNext
-);
-router.put(
-  '/:tokenId/hold',
-  verifyToken,
-  roleGuard(['staff', 'admin']),
-  holdToken
-);
+// ---- Patient / any logged-in user ----
+router.get('/my-status', verifyToken, getMyQueueStatus);
+router.get('/live/:opdId', verifyToken, getLiveQueue);
 
-router.put(
-  '/:tokenId/skip',
-  verifyToken,
-  roleGuard(['staff', 'admin']),
-  skipToken
-);
-
-router.put(
-  '/:tokenId/recall',
-  verifyToken,
-  roleGuard(['staff', 'admin']),
-  recallToken
-);
+// ---- Staff / admin ----
+router.post('/call-next', verifyToken, roleGuard(['staff', 'admin']), callNext);
+router.put('/:tokenId/hold', verifyToken, roleGuard(['staff', 'admin']), holdToken);
+router.put('/:tokenId/skip', verifyToken, roleGuard(['staff', 'admin']), skipToken);
+router.put('/:tokenId/recall', verifyToken, roleGuard(['staff', 'admin']), recallToken);
 
 module.exports = router;
