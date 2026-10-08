@@ -4,7 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { AuthContext } from '../context/AuthContext';
 
 import AuthNavigator from './AuthNavigator';
-import PatientNavigator from './PatientNavigator';
+// import PatientNavigator from './PatientNavigator';
 import StaffNavigator from './StaffNavigator'; // Staff Navigator එක Import කළා
 
 export default function AppNavigator() {
@@ -30,8 +30,9 @@ export default function AppNavigator() {
         // 2. Log වී ඇති Staff කෙනෙක් -> Staff Portal
         <StaffNavigator />
       ) : (
-        // 3. Log වී ඇති Patient / Caregiver -> Patient Portal
-        <PatientNavigator />
+        // 3. Log වී ඇති Patient / Caregiver -> Patient Portal (දැනට comment කර ඇත)
+        // <PatientNavigator />
+        null
       )}
     </NavigationContainer>
   );

@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AuthContext } from '../context/AuthContext';
 
-import PatientDashboard from '../screens/patient/PatientDashboard';
+// import PatientDashboard from '../screens/patient/PatientDashboard';
 import ChatbotScreen from '../screens/patient/ChatbotScreen';
 
 const PatientStack = createNativeStackNavigator();
@@ -24,7 +24,7 @@ function ChatbotRoute({ navigation }) {
 export default function PatientNavigator() {
   return (
     <PatientStack.Navigator screenOptions={{ headerShown: false }}>
-      <PatientStack.Screen name="PatientDashboard" component={PatientDashboard} />
+      {/* <PatientStack.Screen name="PatientDashboard" component={PatientDashboard} /> */}
       <PatientStack.Screen name="Chatbot" component={ChatbotRoute} />
     </PatientStack.Navigator>
   );

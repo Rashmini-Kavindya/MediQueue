@@ -4,13 +4,34 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthContext } from '../../context/AuthContext';
 
 export default function StaffDashboard({ navigation }) {
-  const { user } = useContext(AuthContext);
+  // Extract logout method from AuthContext
+  const { user, logout } = useContext(AuthContext);
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Kya aap Staff Portal se logout karna चाहते hain?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            if (logout) {
+              await logout();
+            }
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -18,7 +39,7 @@ export default function StaffDashboard({ navigation }) {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 16 }}
       >
-        {/* Header Tag and Date */}
+        {/* Header Tag, Date & Logout Button */}
         <View className="flex-row items-center justify-between mb-2">
           <View className="bg-blue-50 px-3 py-1 rounded-full border border-blue-100 flex-row items-center">
             <View className="w-2 h-2 rounded-full bg-blue-600 mr-1.5" />
@@ -27,13 +48,23 @@ export default function StaffDashboard({ navigation }) {
             </Text>
           </View>
 
-          <View className="items-end">
-            <Text className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-              TODAY'S DATE
-            </Text>
-            <Text className="text-xs font-bold text-slate-800">
-              12 Oct 2026
-            </Text>
+          <View className="flex-row items-center gap-3">
+            <View className="items-end">
+              <Text className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                TODAY'S DATE
+              </Text>
+              <Text className="text-xs font-bold text-slate-800">
+                12 Oct 2026
+              </Text>
+            </View>
+
+            {/* Logout Button */}
+            <TouchableOpacity
+              onPress={handleLogout}
+              className="bg-red-50 p-2 rounded-xl border border-red-100"
+            >
+              <Ionicons name="log-out-outline" size={18} color="#EF4444" />
+            </TouchableOpacity>
           </View>
         </View>
 
