@@ -58,7 +58,7 @@ export default function LoginScreen({ navigation, route }) {
 
   return (
     <SafeAreaView className="flex-1 bg-[#F8F9FE]">
-      {/* Header */}
+      {/* Header Bar */}
       <View className="flex-row items-center justify-between px-5 py-4 bg-white border-b border-slate-100">
         <TouchableOpacity onPress={() => navigation.goBack()} className="p-1">
           <Ionicons name="arrow-back" size={24} color="#1E293B" />
@@ -66,13 +66,14 @@ export default function LoginScreen({ navigation, route }) {
 
         <Text className="text-base font-bold text-slate-800">{t('login_title', 'Login')}</Text>
 
-        {/* Staff Login Link in top right corner */}
+        {/* Staff Login Link in Top Right Corner */}
         <TouchableOpacity 
           onPress={() => navigation.navigate('StaffLogin')}
-          className="flex-row items-center bg-slate-100 px-2.5 py-1.5 rounded-lg border border-slate-200"
+          className="flex-row items-center bg-blue-50 px-2.5 py-1.5 rounded-lg border border-blue-100 active:bg-blue-100"
+          activeOpacity={0.7}
         >
           <Ionicons name="shield-checkmark-outline" size={14} color="#2563EB" />
-          <Text className="text-xs font-semibold text-blue-600 ml-1">Staff</Text>
+          <Text className="text-xs font-bold text-blue-600 ml-1">Staff Login</Text>
         </TouchableOpacity>
       </View>
 

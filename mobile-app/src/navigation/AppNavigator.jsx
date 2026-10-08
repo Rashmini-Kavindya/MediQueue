@@ -5,7 +5,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AuthContext } from '../context/AuthContext';
 
 import AuthNavigator from './AuthNavigator';
-import StaffNavigator from './StaffNavigator';
+import AdminNavigator from './AdminNavigator'; // StaffNavigator වෙනුවට AdminNavigator import කිරීම
 import TabNavigator from './TabNavigator'; // Patient Bottom Tab Navigator
 import RequestNewToken from '../screens/patient/RequestNewToken';
 import ConfirmNewToken from '../screens/patient/ConfirmNewToken';
@@ -35,8 +35,8 @@ export default function AppNavigator() {
         // 1. Log වී නැත -> Auth Stack (Login / Register / StaffLogin)
         <AuthNavigator />
       ) : isStaffUser ? (
-        // 2. Log වී ඇති Staff / Doctor / Admin -> Staff Portal
-        <StaffNavigator />
+        // 2. Log වී ඇති Staff / Doctor / Admin -> Admin Drawer Navigator
+        <AdminNavigator />
       ) : isPatient ? (
         // 3. Patient -> Bottom tabs + token request screens
         <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -45,7 +45,7 @@ export default function AppNavigator() {
           <Stack.Screen name="ConfirmNewToken" component={ConfirmNewToken} />
         </Stack.Navigator>
       ) : (
-        // 4. Caregiver (දැනට Patient tabs). Caregiver navigator එක ඊළඟට සෙට් කරමු
+        // 4. Caregiver (දැනට Patient tabs)
         <TabNavigator />
       )}
     </NavigationContainer>

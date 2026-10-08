@@ -241,9 +241,12 @@ const getMyQueueStatus = async (req, res) => {
 
 const getLiveQueue = async (req, res) => {
   try {
-    const { opdId } = req.params;
+    const { opdId: requestedOpdId } = req.params;
 
-    const opd = await OPD.findOne({ opdId });
+    // If the requested OPD does not exist, fall back to the first available OPD
+    const opd =
+      (await OPD.findOne({ opdId: requestedOpdId })) ||
+      (await OPD.findOne());
 
     if (!opd) {
       return res.status(404).json({
@@ -251,6 +254,8 @@ const getLiveQueue = async (req, res) => {
         message: 'OPD not found'
       });
     }
+
+    const opdId = opd.opdId;
 
     const queueDate =
       req.query.date ||
