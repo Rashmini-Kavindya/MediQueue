@@ -1,5 +1,7 @@
+
 const User = require('../models/User');
 const UserPreference = require('../models/UserPreference');
+const CaregiverLink = require('../models/CaregiverLink');
 
 // ======================================================
 // READ - Get current user's profile
@@ -115,6 +117,10 @@ exports.updateProfile = async (req, res) => {
 
 // ======================================================
 // SOFT DELETE - Deactivate own account
+//
+// Does NOT delete the User document.
+// Does NOT delete patient records, tokens or history.
+// Revokes caregiver-patient links where applicable.
 // ======================================================
 exports.deactivateAccount = async (req, res) => {
   try {
@@ -129,6 +135,70 @@ exports.deactivateAccount = async (req, res) => {
       });
     }
 
+    if (user.status === 'inactive') {
+      return res.status(409).json({
+        success: false,
+        message: 'This account is already deactivated.'
+      });
+    }
+
+    // Self-service account deletion is available
+    // only for patients and caregivers.
+    if (!['patient', 'caregiver'].includes(user.role)) {
+      return res.status(403).json({
+        success: false,
+        message:
+          'Staff and admin accounts must be managed by an administrator.'
+      });
+    }
+
+    // ----------------------------------------------
+    // CAREGIVER ACCOUNT
+    //
+    // Revoke this caregiver's patient relationships.
+    // Do not delete the patients or the link records.
+    // ----------------------------------------------
+    if (user.role === 'caregiver' && user.caregiverId) {
+      await CaregiverLink.updateMany(
+        {
+          caregiverId: user.caregiverId,
+          status: { $ne: 'revoked' }
+        },
+        {
+          $set: {
+            status: 'revoked',
+            verified: false
+          }
+        }
+      );
+    }
+
+    // ----------------------------------------------
+    // PATIENT ACCOUNT
+    //
+    // Revoke caregiver access to this patient.
+    // Do not delete the patient's hospital records.
+    // ----------------------------------------------
+    if (user.role === 'patient' && user.patientId) {
+      await CaregiverLink.updateMany(
+        {
+          patientId: user.patientId,
+          status: { $ne: 'revoked' }
+        },
+        {
+          $set: {
+            status: 'revoked',
+            verified: false
+          }
+        }
+      );
+    }
+
+    // ----------------------------------------------
+    // SOFT DELETE
+    //
+    // The user remains stored in MongoDB.
+    // ----------------------------------------------
     user.status = 'inactive';
 
     await user.save();
@@ -139,7 +209,9 @@ exports.deactivateAccount = async (req, res) => {
         userId: user.userId,
         status: user.status
       },
-      message: 'Account deactivated successfully.'
+      message:
+        'Account deactivated successfully. ' +
+        'You will no longer be able to access MediQueue.'
     });
 
   } catch (error) {
