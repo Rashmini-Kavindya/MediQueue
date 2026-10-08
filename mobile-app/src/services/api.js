@@ -8,15 +8,17 @@ const API_BASE_URL = Platform.OS === 'web'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
 });
 
 api.interceptors.request.use(
   async (config) => {
-    const token = await AsyncStorage.getItem('userToken');
-    if (token) {
+    // AuthContext stores the current JWT under "token".
+    // "userToken" is only a fallback for legacy screens.
+    const currentToken = await AsyncStorage.getItem('token');
+    const token = currentToken || await AsyncStorage.getItem('userToken');
+    // Preserve any explicit Authorization header from older caregiver API functions.
+    if (token && !config.headers.Authorization) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
