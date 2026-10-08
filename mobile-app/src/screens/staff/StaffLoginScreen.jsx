@@ -14,7 +14,8 @@ import api from '../../services/api';
 import { AuthContext } from '../../context/AuthContext';
 import AuthField from '../../components/AuthField';
 
-const STAFF_ROLES = ['staff', 'admin'];
+// Admin Dashboard එකට Redirect වීම සඳහා සියලුම Staff/Doctor/Admin Roles ඇතුළත් කර ඇත
+const STAFF_ROLES = ['staff', 'admin', 'doctor'];
 const REMEMBER_KEY = 'staffRememberedEmail';
 
 export default function StaffLoginScreen({ navigation }) {
@@ -59,7 +60,7 @@ export default function StaffLoginScreen({ navigation }) {
       if (res.data?.success) {
         const { token, user } = res.data.data;
 
-        // This portal is only for staff / admin accounts
+        // This portal is only for staff / admin / doctor accounts
         if (!STAFF_ROLES.includes(user?.role)) {
           setError(
             t('staff_only', 'Access denied: this portal is only for hospital staff.')
@@ -77,7 +78,7 @@ export default function StaffLoginScreen({ navigation }) {
           console.log('Failed to save remembered email:', e);
         }
 
-        // AppNavigator switches to the logged-in navigator automatically
+        // AppNavigator automatic switches to AdminNavigator for all STAFF_ROLES
         await loginWithToken(token, user);
       }
     } catch (err) {

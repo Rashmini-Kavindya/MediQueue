@@ -44,13 +44,13 @@ export const AuthProvider = ({ children }) => {
   const loginWithToken = (token, userData) => login(userData, token);
 
   const logout = async () => {
+    delete api.defaults.headers.common['Authorization'];
+    setUser(null);
+
     try {
-      await AsyncStorage.removeItem('token');
-      await AsyncStorage.removeItem('user');
-      delete api.defaults.headers.common['Authorization'];
-      setUser(null);
+      await AsyncStorage.multiRemove(['token', 'user']);
     } catch (e) {
-      console.log('Error logging out:', e);
+      console.log('Error clearing stored auth data:', e);
     }
   };
 
