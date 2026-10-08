@@ -6,7 +6,7 @@ const getMyQueueStatus = async (req, res) => {
   try {
     const userId = req.user.userId;
 
-    const token = await Token.findOne({
+    const tokens = await Token.find({
       userId,
       status: {
         $in: [
@@ -18,53 +18,56 @@ const getMyQueueStatus = async (req, res) => {
       }
     }).sort({ createdAt: -1 });
 
-    if (!token) {
+    if (!tokens || tokens.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'No active queue found'
       });
     }
 
-    const opd = await OPD.findOne({
-      opdId: token.opdId
-    });
+    const activeQueuesList = [];
 
-    if (!opd) {
-      return res.status(404).json({
-        success: false,
-        message: 'OPD not found'
+    for (const token of tokens) {
+      const opd = await OPD.findOne({
+        opdId: token.opdId
       });
-    }
 
-    const patientsAhead = await Token.countDocuments({
-      opdId: token.opdId,
-      queueDate: token.queueDate,
-      tokenSequence: { $lt: token.tokenSequence },
-      status: {
-        $in: [
-          'waiting',
-          'called',
-          'hold',
-          'in-consultation'
-        ]
-      }
-    });
+      if (!opd) continue;
 
-    const estimatedWaitTime =
-      patientsAhead * (opd.avgConsultMinutes || 10);
+      const patientsAhead = await Token.countDocuments({
+        opdId: token.opdId,
+        queueDate: token.queueDate,
+        tokenSequence: { $lt: token.tokenSequence },
+        status: {
+          $in: [
+            'waiting',
+            'called',
+            'hold',
+            'in-consultation'
+          ]
+        }
+      });
 
-    res.status(200).json({
-      success: true,
-      data: {
+      const estimatedWaitTime =
+        patientsAhead * (opd.avgConsultMinutes || 10);
+
+      activeQueuesList.push({
         tokenId: token.tokenId,
         tokenNo: token.tokenNo,
         opdId: token.opdId,
+        opdName: opd.name,
+        room: opd.room || 'Room 01',
         queueDate: token.queueDate,
         status: token.status,
         patientsAhead,
         estimatedWaitMinutes: estimatedWaitTime,
         trackingCode: token.trackingCode
-      }
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: activeQueuesList
     });
 
   } catch (error) {
@@ -111,7 +114,7 @@ const getLiveQueue = async (req, res) => {
       );
 
     const currentToken = tokens.find(
-      token => token.status === 'called'
+      token => token.status === 'called' || token.status === 'in-consultation'
     );
 
     res.status(200).json({
