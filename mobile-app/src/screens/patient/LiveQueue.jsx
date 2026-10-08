@@ -348,6 +348,33 @@ export default function LiveQueue({ navigation, route }) {
           })
         )}
       </ScrollView>
+
+{/* Floating Chatbot Button */}
+<TouchableOpacity
+  onPress={() => navigation?.navigate('Chatbot')}
+  activeOpacity={0.85}
+  className="absolute bottom-6 right-5 w-14 h-14 bg-blue-600 rounded-full justify-center items-center shadow-lg z-50"
+  style={{
+    elevation: 8,
+    shadowColor: '#2563eb',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+  }}
+>
+  <MaterialCommunityIcons
+    name="robot-outline"
+    size={28}
+    color="#ffffff"
+  />
+
+  {/* Green Online Indicator */}
+  <View
+    className="absolute bottom-0.5 right-0.5 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white"
+  />
+</TouchableOpacity>
+
+      
     </SafeAreaView>
   );
 }

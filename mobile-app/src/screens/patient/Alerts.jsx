@@ -41,6 +41,11 @@ export default function Alerts() {
             detectedType = 'QUEUE_UPDATE';
           }
 
+          // සටහන: isRead හරියට එන්නේ නැති නම්, sentAt එක බලලා පැයකට වඩා පැරණි ඒවා older ලෙස ගන්නත් පුළුවන්
+          const itemTime = item.sentAt ? new Date(item.sentAt).getTime() : new Date().getTime();
+          const oneHourAgo = new Date().getTime() - (60 * 60 * 1000);
+          const isReallyOlder = item.isRead === true || itemTime < oneHourAgo;
+
           return {
             id: item.notificationId || item._id || index.toString(),
             type: detectedType,
@@ -52,7 +57,7 @@ export default function Alerts() {
             remainingNumbers: item.remainingNumbers || item.patientsAhead || 0,
             currentServing: item.currentServing || item.currentToken || '-',
             aheadCount: item.aheadCount || item.patientsAhead || 0,
-            isOlder: item.isRead === true,
+            isOlder: isReallyOlder,
           };
         });
         setAlerts(formattedAlerts);
