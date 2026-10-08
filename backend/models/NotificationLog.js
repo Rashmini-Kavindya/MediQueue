@@ -7,10 +7,11 @@ const notificationLogSchema = new mongoose.Schema({
   },
 
   channel: {
-    type: String,
-    enum: ['app', 'sms'],
-    required: true
-  },
+  type: String,
+  enum: ['app', 'sms', 'SMS', 'push', 'email'],
+  required: true,
+  default: 'app'
+},
 
   deliveryStatus: {
     type: String,
