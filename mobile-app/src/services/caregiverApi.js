@@ -225,3 +225,12 @@ export const verifyCaregiverPhoneChange = async (otp) => {
     { otp }, await getAuthConfig());
   return response.data;
 };
+
+export const deactivateMyAccount = async () => {
+  const response = await api.delete(
+    '/users/me',
+    await getAuthConfig()
+  );
+
+  return response.data;
+};
