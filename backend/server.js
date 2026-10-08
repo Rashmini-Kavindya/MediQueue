@@ -33,6 +33,7 @@ app.use((req, res, next) => {
 
 // Routes 
 app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/opd', require('./routes/opdRoutes'));
 app.use('/api/opds', require('./routes/opdRoutes'));
 app.use('/api/doctors', require('./routes/doctorRoutes'));
 app.use('/api/rooms', require('./routes/roomRoutes'));
@@ -46,8 +47,10 @@ app.use('/api/users', require('./routes/profileRoutes'));
 app.use('/api/waiting-areas', require('./routes/waitingAreaRoutes'));
 app.use('/api/admin/users', require('./routes/adminUserRoutes'));
 
-// 
+// Chamupathi Routes 
 app.use('/api/queue', queueRoutes);
+app.use('/api/consultations', require('./routes/consultationRoutes'));
+app.use('/api/prescriptions', require('./routes/prescriptionRoutes'));
 
 
 app.use('/api/notifications', require('./routes/notificationRoutes'));

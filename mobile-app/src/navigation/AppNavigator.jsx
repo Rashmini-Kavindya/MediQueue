@@ -1,70 +1,63 @@
-import React, {
-  useContext
-} from 'react';
 
-import {
-  NavigationContainer
-} from '@react-navigation/native';
-
-import {
-  ActivityIndicator,
-  View
-} from 'react-native';
-
-import {
-  AuthContext
-} from '../context/AuthContext';
+import React, { useContext } from 'react';
+import { ActivityIndicator, View } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { AuthContext } from '../context/AuthContext';
 
 import AuthNavigator from './AuthNavigator';
-
-import PatientDashboard from '../screens/patient/PatientDashboard';
+import StaffNavigator from './StaffNavigator';
+import TabNavigator from './TabNavigator'; // Patient Bottom Tab Navigator
+import RequestNewToken from '../screens/patient/RequestNewToken';
+import ConfirmNewToken from '../screens/patient/ConfirmNewToken';
 
 import CaregiverNavigator from './CaregiverNavigator';
 
+const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
-  const {
-    user,
-    userRole,
-    loading
-  } = useContext(AuthContext);
-
+  const { user, userRole, loading } = useContext(AuthContext);
 
   if (loading) {
     return (
       <View className="flex-1 bg-slate-900 justify-center items-center">
-
         <ActivityIndicator
           size="large"
           color="#0891b2"
         />
-
       </View>
     );
   }
 
+  const role = userRole || user?.role;
+
+  // User කෙනෙක් Log වී ඇත්නම් එයා Staff / Doctor / Admin ද යන්න පරීක්ෂා කිරීම
+  const isStaffUser = !!user && ['staff', 'doctor', 'admin'].includes(role);
+  const isPatient = !!user && role === 'patient';
+  const isCaregiver = !!user && role === 'caregiver';
 
   return (
     <NavigationContainer>
-
       {!user ? (
-
+        // 1. Log වී නැත -> Auth Stack (Login / Register / StaffLogin)
         <AuthNavigator />
-
-      ) : userRole === 'patient' ? (
-
-        <PatientDashboard />
-
-      ) : userRole === 'caregiver' ? (
-
+      ) : isStaffUser ? (
+        // 2. Log වී ඇති Staff / Doctor / Admin -> Staff Portal
+        <StaffNavigator />
+      ) : isPatient ? (
+        // 3. Patient -> Bottom tabs + token request screens
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="MainTabs" component={TabNavigator} />
+          <Stack.Screen name="RequestNewToken" component={RequestNewToken} />
+          <Stack.Screen name="ConfirmNewToken" component={ConfirmNewToken} />
+        </Stack.Navigator>
+      ) : isCaregiver ? (
+        // 4. Caregiver - Caregiver Navigator
         <CaregiverNavigator />
-
       ) : (
-
-        <PatientDashboard />
-
+        // Fallback navigation
+        <TabNavigator />
       )}
-
     </NavigationContainer>
   );
 }

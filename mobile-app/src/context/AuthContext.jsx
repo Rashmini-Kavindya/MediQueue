@@ -28,6 +28,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // (userData, token) order
   const login = async (userData, token) => {
     try {
       await AsyncStorage.setItem('token', token);
@@ -38,6 +39,9 @@ export const AuthProvider = ({ children }) => {
       console.log('Error saving auth data:', e);
     }
   };
+
+  // Used by LoginScreen / OtpScreen: backend returns { token, user }
+  const loginWithToken = (token, userData) => login(userData, token);
 
   const logout = async () => {
     try {
@@ -51,7 +55,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, userRole: user?.role, loading, login, logout }}>
+    <AuthContext.Provider
+      value={{ user, userRole: user?.role, loading, login, loginWithToken, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );

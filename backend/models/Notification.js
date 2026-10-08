@@ -17,9 +17,16 @@ const notificationSchema = new mongoose.Schema({
     required: true
   },
 
+  title: {                  
+    type: String
+  },
+  room: {                   
+    type: String
+  },
+
   type: {
     type: String,
-    enum: ['near', 'called', 'update'],
+    enum: ['near', 'called', 'update', 'QUEUE_UPDATE', 'YOUR_TURN', 'TURN_NEAR'],
     required: true
   },
 
@@ -30,7 +37,7 @@ const notificationSchema = new mongoose.Schema({
 
   channel: {
     type: String,
-    enum: ['app', 'sms'],
+    enum: ['app', 'sms', 'SMS', 'push', 'email'],
     required: true,
     default: 'app'
   },
