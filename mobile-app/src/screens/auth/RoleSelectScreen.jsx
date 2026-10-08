@@ -32,9 +32,21 @@ export default function RoleSelectScreen({ navigation }) {
     <SafeAreaView className="flex-1 bg-white">
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
+      {/* Top Bar with Staff Login Button */}
+      <View className="flex-row items-center justify-end px-5 py-3 bg-white">
+        <TouchableOpacity 
+          onPress={() => navigation.navigate('StaffLogin')}
+          className="flex-row items-center bg-blue-50 px-2.5 py-1.5 rounded-lg border border-blue-100 active:bg-blue-100"
+          activeOpacity={0.7}
+        >
+          <Ionicons name="shield-checkmark-outline" size={14} color="#2563EB" />
+          <Text className="text-xs font-bold text-blue-600 ml-1">Staff Login</Text>
+        </TouchableOpacity>
+      </View>
+
       <ScrollView
         contentContainerStyle={{ flexGrow: 1, justifyContent: 'space-between' }}
-        className="px-6 py-6"
+        className="px-6 pb-6"
         showsVerticalScrollIndicator={false}
       >
         {/* Top Header & Logo */}

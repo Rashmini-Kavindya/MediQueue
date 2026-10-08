@@ -14,8 +14,11 @@ import api from '../../services/api';
 import { AuthContext } from '../../context/AuthContext';
 import AuthField from '../../components/AuthField';
 
-// Admin Dashboard එකට Redirect වීම සඳහා සියලුම Staff/Doctor/Admin Roles ඇතුළත් කර ඇත
-const STAFF_ROLES = ['staff', 'admin', 'doctor'];
+// Roles allowed to use this portal.
+// After login, AppNavigator redirects by role:
+//   admin          -> AdminNavigator (admin dashboard)
+//   staff / doctor -> StaffNavigator (staff dashboard)
+const STAFF_ROLES = ['staff', 'doctor', 'admin'];
 const REMEMBER_KEY = 'staffRememberedEmail';
 
 export default function StaffLoginScreen({ navigation }) {
@@ -57,30 +60,33 @@ export default function StaffLoginScreen({ navigation }) {
       // Backend: POST /auth/login { identifier, password } -> { data: { token, user } }
       const res = await api.post('/auth/login', { identifier: loginId, password });
 
-      if (res.data?.success) {
-        const { token, user } = res.data.data;
-
-        // This portal is only for staff / admin / doctor accounts
-        if (!STAFF_ROLES.includes(user?.role)) {
-          setError(
-            t('staff_only', 'Access denied: this portal is only for hospital staff.')
-          );
-          return;
-        }
-
-        try {
-          if (rememberStation) {
-            await AsyncStorage.setItem(REMEMBER_KEY, loginId);
-          } else {
-            await AsyncStorage.removeItem(REMEMBER_KEY);
-          }
-        } catch (e) {
-          console.log('Failed to save remembered email:', e);
-        }
-
-        // AppNavigator automatic switches to AdminNavigator for all STAFF_ROLES
-        await loginWithToken(token, user);
+      if (!res.data?.success) {
+        setError(res.data?.message || t('invalid_credentials', 'Invalid credentials'));
+        return;
       }
+
+      const { token, user } = res.data.data;
+      const role = user?.role;
+
+      // Patients / caregivers must not enter the staff portal
+      if (!STAFF_ROLES.includes(role)) {
+        setError(t('staff_only', 'Access denied: this portal is only for hospital staff.'));
+        return;
+      }
+
+      try {
+        if (rememberStation) {
+          await AsyncStorage.setItem(REMEMBER_KEY, loginId);
+        } else {
+          await AsyncStorage.removeItem(REMEMBER_KEY);
+        }
+      } catch (e) {
+        console.log('Failed to save remembered email:', e);
+      }
+
+      // Saves token + user in AuthContext. AppNavigator then switches by role:
+      // staff/doctor -> StaffNavigator, admin -> AdminNavigator.
+      await loginWithToken(token, user);
     } catch (err) {
       setError(
         err.response?.data?.message ||
