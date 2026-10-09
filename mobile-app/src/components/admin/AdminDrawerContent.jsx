@@ -178,7 +178,6 @@ export default function AdminDrawerContent(props) {
       {/* COMMUNICATION */}
       <SectionHeader title="COMMUNICATION" />
       <DrawerItem label="Notifications" icon="notifications-outline" routeName="Notifications" />
-      <DrawerItem label="Announcements" icon="megaphone-outline" routeName="Announcements" />
 
       {/* SYSTEM */}
       <SectionHeader title="SYSTEM" />

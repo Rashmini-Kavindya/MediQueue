@@ -15,7 +15,11 @@ const api = axios.create({
 
 api.interceptors.request.use(
   async (config) => {
-    const token = await AsyncStorage.getItem('userToken');
+    // AuthContext stores the JWT under 'token'; 'userToken' kept as a legacy fallback
+    const token =
+      (await AsyncStorage.getItem('token')) ||
+      (await AsyncStorage.getItem('userToken'));
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

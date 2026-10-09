@@ -53,12 +53,19 @@ app.use('/api/consultations', require('./routes/consultationRoutes'));
 app.use('/api/prescriptions', require('./routes/prescriptionRoutes'));
 
 
-app.use('/api/notifications', require('./routes/notificationRoutes'));
-app.use('/api/alert-preferences', require('./routes/alertPreferenceRoutes'));
-app.use('/api/templates', require('./routes/templateRoutes'));
+// app.use('/api/notifications', require('./routes/notificationRoutes'));
+// app.use('/api/alert-preferences', require('./routes/alertPreferenceRoutes'));
+// app.use('/api/templates', require('./routes/templateRoutes'));
 app.use('/api/track', require('./routes/trackRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
+// app.use('/api/notification-logs', require('./routes/notificationLogRoutes'));
+
+app.use('/api/notifications', require('./routes/notificationRoutes'));
+app.use('/api/admin/notifications', require('./routes/Adminnotificationroutes'));
+app.use('/api/admin/alert-preferences', require('./routes/adminAlertPreferenceRoutes'));
 app.use('/api/notification-logs', require('./routes/notificationLogRoutes'));
+app.use('/api/alert-preferences', require('./routes/alertPreferenceRoutes'));
+app.use('/api/templates', require('./routes/templateRoutes'));
 
 app.get('/', (req, res) => {
   res.send('MediQueue Server Running...');
