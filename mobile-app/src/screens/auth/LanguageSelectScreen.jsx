@@ -4,6 +4,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
+const softShadow = {
+  shadowColor: '#0F172A',
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.06,
+  shadowRadius: 14,
+  elevation: 3,
+};
+
 export default function LanguageSelectScreen({ navigation }) {
   const { t, i18n } = useTranslation();
   const [selectedLanguage, setSelectedLanguage] = useState(i18n.language || 'en');
@@ -39,8 +47,8 @@ export default function LanguageSelectScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+    <SafeAreaView className="flex-1 bg-[#F2F2F7]">
+      <StatusBar barStyle="dark-content" backgroundColor="#F2F2F7" />
 
       <ScrollView
         contentContainerStyle={{ flexGrow: 1, justifyContent: 'space-between' }}
@@ -48,81 +56,77 @@ export default function LanguageSelectScreen({ navigation }) {
         showsVerticalScrollIndicator={false}
       >
         {/* Header Section */}
-        <View className="items-center mt-2">
-          <View className="w-24 h-24 rounded-3xl bg-blue-50/60 items-center justify-center p-2 mb-3 border border-blue-100/50 shadow-sm">
+        <View className="items-center mt-4">
+          <View
+            className="w-[120px] h-[120px] rounded-[30px] bg-white items-center justify-center mb-4"
+            style={softShadow}
+          >
             <Image
               source={require('../../../assets/logo.png')}
-              style={{ width: 72, height: 72 }}
+              style={{ width: 96, height: 96 }}
               resizeMode="contain"
             />
           </View>
 
-          <Text className="text-2xl font-extrabold text-slate-900 tracking-tight">
+          <Text className="text-[26px] font-extrabold text-slate-900 tracking-tight">
             Medi<Text className="text-[#0052cc]">Queue</Text>
           </Text>
-          <Text className="text-slate-400 text-[11px] font-medium mt-1 text-center tracking-wide">
+          <Text className="text-slate-500 text-xs font-medium mt-1 text-center">
             {t('tagline')}
           </Text>
         </View>
 
         {/* Language Selection List */}
-        <View className="my-6">
-          <Text className="text-xl font-bold text-slate-900 tracking-tight">
+        <View className="my-8">
+          <Text className="text-[22px] font-bold text-slate-900 tracking-tight">
             {t('welcome')}
           </Text>
-          <Text className="text-slate-500 text-xs mt-1 mb-5 font-normal">
+          <Text className="text-slate-500 text-[13px] mt-1 mb-5 font-normal">
             {t('selectLanguage')}
           </Text>
 
-          <View className="space-y-3">
+          <View className="gap-3">
             {languages.map((lang) => {
               const isSelected = selectedLanguage === lang.id;
 
               return (
                 <TouchableOpacity
                   key={lang.id}
-                  activeOpacity={0.85}
+                  activeOpacity={0.8}
                   onPress={() => handleSelectLanguage(lang.id)}
-                  className={`flex-row items-center justify-between p-4 rounded-2xl border shadow-sm ${
-                    isSelected
-                      ? 'bg-[#edf4ff] border-[#1d61e7]'
-                      : 'bg-white border-slate-200'
+                  className={`flex-row items-center justify-between px-4 py-3.5 rounded-[20px] bg-white ${
+                    isSelected ? 'border-[1.5px] border-[#0052cc]' : 'border-[1.5px] border-transparent'
                   }`}
+                  style={softShadow}
                 >
-                  <View className="flex-row items-center space-x-3.5">
+                  <View className="flex-row items-center gap-3.5">
                     <View
-                      className={`w-11 h-11 rounded-xl items-center justify-center ${
-                        isSelected ? 'bg-[#dbe8ff]' : 'bg-slate-100'
+                      className={`w-11 h-11 rounded-[14px] items-center justify-center ${
+                        isSelected ? 'bg-[#E8F0FE]' : 'bg-[#F2F2F7]'
                       }`}
                     >
                       <Ionicons
                         name={lang.icon}
-                        size={20}
-                        color={isSelected ? '#1d61e7' : '#64748b'}
+                        size={21}
+                        color={isSelected ? '#0052cc' : '#64748b'}
                       />
                     </View>
 
                     <View>
-                      <Text
-                        className={`text-sm font-bold ${
-                          isSelected ? 'text-slate-900' : 'text-slate-700'
-                        }`}
-                      >
+                      <Text className="text-[15px] font-semibold text-slate-900">
                         {lang.name}
                       </Text>
-                      <Text className="text-slate-400 text-[11px] font-medium mt-0.5">
+                      <Text className="text-slate-400 text-xs font-medium mt-0.5">
                         {lang.subtitle}
                       </Text>
                     </View>
                   </View>
 
-                  <View
-                    className={`w-5 h-5 rounded-full items-center justify-center border-2 ${
-                      isSelected ? 'border-[#1d61e7] bg-white' : 'border-slate-300 bg-transparent'
-                    }`}
-                  >
-                    {isSelected && <View className="w-2.5 h-2.5 rounded-full bg-[#1d61e7]" />}
-                  </View>
+                  {isSelected ? (
+                    <Ionicons name="checkmark-circle" size={24} color="#0052cc" />
+                  ) : (
+                    <View className="w-6 h-6 rounded-full border-[1.5px] border-slate-300" />
+                  )}
                 </TouchableOpacity>
               );
             })}
@@ -131,14 +135,21 @@ export default function LanguageSelectScreen({ navigation }) {
 
         {/* Continue Button */}
         <TouchableOpacity
-          activeOpacity={0.88}
+          activeOpacity={0.85}
           onPress={handleContinue}
-          className="w-full bg-[#0052cc] py-4 rounded-2xl flex-row items-center justify-center mb-2 shadow-md shadow-blue-500/25"
+          className="w-full bg-[#0052cc] h-[54px] rounded-[16px] flex-row items-center justify-center mb-2"
+          style={{
+            shadowColor: '#0052cc',
+            shadowOffset: { width: 0, height: 6 },
+            shadowOpacity: 0.28,
+            shadowRadius: 12,
+            elevation: 5,
+          }}
         >
-          <Text className="text-white font-bold text-sm tracking-wider mr-2 uppercase">
+          <Text className="text-white font-semibold text-base mr-2">
             {t('continue')}
           </Text>
-          <Ionicons name="arrow-forward" size={16} color="#ffffff" />
+          <Ionicons name="arrow-forward" size={18} color="#ffffff" />
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

@@ -1,5 +1,6 @@
 import React, { useContext, useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, RefreshControl, Modal, TextInput, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { AuthContext } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
@@ -23,18 +24,22 @@ const IOS = {
   fill: '#EFEFF4',
   surface: '#F7F7FA',
   separator: '#E9E9EE',
-  groupedBg: '#F4F5F9',
+  groupedBg: '#F2F2F7',
   white: '#FFFFFF',
 };
 
 // iOS style soft shadow for cards
 const cardShadow = {
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.05,
-  shadowRadius: 10,
+  shadowColor: '#0B1B3A',
+  shadowOffset: { width: 0, height: 6 },
+  shadowOpacity: 0.07,
+  shadowRadius: 16,
   elevation: 2,
 };
+
+// iOS squircle corners + hairline edge (Android වල ignore වෙනවා)
+const squircle = { borderCurve: 'continuous' };
+const edge = { borderWidth: 0.5, borderColor: 'rgba(60,60,67,0.12)' };
 
 export default function PatientDashboard({ navigation }) {
   const { user, logout } = useContext(AuthContext);
@@ -127,6 +132,8 @@ export default function PatientDashboard({ navigation }) {
   const patientName = user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : 'User';
 
   return (
+    // SafeAreaView: Header එක status bar එකට යටින් යන එක නවත්වයි (අනිත් screens වල වගේම)
+    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: IOS.white }}>
     <View style={{ flex: 1, backgroundColor: IOS.groupedBg }}>
       {/* Reusable Header එක මෙතැනට ඇතුළත් කර ඇත */}
       <AppHeader
@@ -142,22 +149,22 @@ export default function PatientDashboard({ navigation }) {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={IOS.tertiaryLabel} colors={[IOS.blue]} />}
       >
-        <View style={{ paddingTop: 16, paddingBottom: 100, paddingHorizontal: 20 }}>
+        <View style={{ paddingTop: 18, paddingBottom: 110, paddingHorizontal: 16 }}>
 
           {/* Greeting & Verification Badge */}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, paddingHorizontal: 4 }}>
             <View style={{ flex: 1, paddingRight: 12 }}>
               <Text style={{ fontSize: getFontSize(13), color: IOS.tertiaryLabel, fontWeight: '500' }}>
                 {t?.goodMorning || 'Good morning'}
               </Text>
-              <Text numberOfLines={1} style={{ fontSize: getFontSize(28), color: IOS.label, fontWeight: '700', letterSpacing: 0.3 }}>
+              <Text numberOfLines={1} style={{ fontSize: getFontSize(26), color: IOS.label, fontWeight: '700', letterSpacing: 0.2 }}>
                 {patientName}
               </Text>
             </View>
 
-            <View style={{ backgroundColor: IOS.white, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: IOS.separator }}>
+            <View style={{ backgroundColor: IOS.greenSoft, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, flexDirection: 'row', alignItems: 'center' }}>
               <MaterialCommunityIcons name="shield-check" size={14} color={IOS.green} />
-              <Text style={{ fontSize: getFontSize(12), color: IOS.secondaryLabel, fontWeight: '600', marginLeft: 4 }}>
+              <Text style={{ fontSize: getFontSize(12), color: '#248A3D', fontWeight: '600', marginLeft: 4 }}>
                 {t?.nicVerified || 'NIC Verified'}
               </Text>
             </View>
@@ -169,27 +176,27 @@ export default function PatientDashboard({ navigation }) {
           <TouchableOpacity 
             onPress={() => navigation?.navigate('RequestNewToken')}
             activeOpacity={0.85}
-            style={{
+            style={[{
               backgroundColor: IOS.blue,
               padding: 16,
-              borderRadius: 20,
-              marginBottom: 22,
+              borderRadius: 22,
+              marginBottom: 24,
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'space-between',
               shadowColor: IOS.blue,
-              shadowOffset: { width: 0, height: 6 },
-              shadowOpacity: 0.25,
-              shadowRadius: 12,
+              shadowOffset: { width: 0, height: 8 },
+              shadowOpacity: 0.3,
+              shadowRadius: 16,
               elevation: 4,
-            }}
+            }, squircle]}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-              <View style={{ width: 42, height: 42, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginRight: 12 }}>
+              <View style={[{ width: 44, height: 44, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 13, justifyContent: 'center', alignItems: 'center', marginRight: 12 }, squircle]}>
                 <MaterialCommunityIcons name="ticket-confirmation-outline" size={23} color="#fff" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: getFontSize(17), color: '#fff', fontWeight: '600' }}>
+                <Text style={{ fontSize: getFontSize(17), color: '#fff', fontWeight: '600', letterSpacing: -0.2 }}>
                   {t?.getNewToken || 'Get New Token'}
                 </Text>
                 <Text style={{ fontSize: getFontSize(13), color: 'rgba(255,255,255,0.8)', marginTop: 2 }}>
@@ -201,8 +208,8 @@ export default function PatientDashboard({ navigation }) {
           </TouchableOpacity>
 
           {/* Active Queues Section Header */}
-          <View style={{ marginBottom: 12, paddingHorizontal: 2, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text style={{ fontSize: getFontSize(19), color: IOS.label, fontWeight: '700', letterSpacing: 0.3 }}>
+          <View style={{ marginBottom: 12, paddingHorizontal: 4, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={{ fontSize: getFontSize(18), color: IOS.label, fontWeight: '700', letterSpacing: -0.2 }}>
               {t?.activeTokens || 'Active Queue Tokens'}
             </Text>
             {queueList.length > 0 && (
@@ -231,16 +238,16 @@ export default function PatientDashboard({ navigation }) {
               return (
                 <View
                   key={queueData.id || queueData.tokenId || index}
-                  style={[{ backgroundColor: IOS.white, borderRadius: 24, marginBottom: 18, padding: 18 }, cardShadow]}
+                  style={[{ backgroundColor: IOS.white, borderRadius: 26, marginBottom: 18, padding: 16 }, squircle, edge, cardShadow]}
                 >
 
                   {/* Clinic, Room & Status */}
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14 }}>
-                    <View style={{ width: 42, height: 42, backgroundColor: IOS.blueSoft, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginRight: 12 }}>
+                    <View style={[{ width: 44, height: 44, backgroundColor: IOS.blueSoft, borderRadius: 13, justifyContent: 'center', alignItems: 'center', marginRight: 12 }, squircle]}>
                       <MaterialCommunityIcons name="hospital-building" size={22} color={IOS.blue} />
                     </View>
                     <View style={{ flex: 1, paddingRight: 8 }}>
-                      <Text numberOfLines={1} style={{ fontSize: getFontSize(17), color: IOS.label, fontWeight: '600' }}>
+                      <Text numberOfLines={1} style={{ fontSize: getFontSize(17), color: IOS.label, fontWeight: '600', letterSpacing: -0.2 }}>
                         {displayClinicName}
                       </Text>
                       <Text numberOfLines={1} style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, marginTop: 2 }}>
@@ -256,25 +263,25 @@ export default function PatientDashboard({ navigation }) {
                   </View>
 
                   {/* Token Number */}
-                  <View style={{ backgroundColor: IOS.surface, borderRadius: 18, alignItems: 'center', paddingVertical: 20, marginBottom: 12 }}>
-                    <Text style={{ fontSize: getFontSize(13), color: IOS.tertiaryLabel, fontWeight: '500' }}>
+                  <View style={[{ backgroundColor: IOS.blueSoft, borderRadius: 20, alignItems: 'center', paddingVertical: 18, marginBottom: 12 }, squircle]}>
+                    <Text style={{ fontSize: getFontSize(12), color: IOS.blue, fontWeight: '600', letterSpacing: 0.6, textTransform: 'uppercase' }}>
                       {t?.yourToken || 'Your token'}
                     </Text>
-                    <Text style={{ fontSize: getFontSize(52), color: IOS.label, fontWeight: '800', letterSpacing: 1 }}>
+                    <Text style={{ fontSize: getFontSize(44), color: IOS.label, fontWeight: '800', letterSpacing: 0.5, marginTop: 2 }}>
                       {queueData.tokenNo || queueData.tokenSequence || 'N/A'}
                     </Text>
                   </View>
 
                   {/* Now Serving | Ahead of You */}
                   <View style={{ flexDirection: 'row', marginBottom: 12 }}>
-                    <View style={{ flex: 1, backgroundColor: IOS.surface, padding: 14, borderRadius: 16, alignItems: 'center', marginRight: 6 }}>
+                    <View style={[{ flex: 1, backgroundColor: IOS.surface, padding: 14, borderRadius: 18, alignItems: 'center', marginRight: 6 }, squircle]}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                         <MaterialCommunityIcons name="check-circle" size={14} color={IOS.green} />
                         <Text style={{ fontSize: getFontSize(12), color: IOS.green, fontWeight: '600', marginLeft: 4 }}>
                           {t?.nowServing || 'Now serving'}
                         </Text>
                       </View>
-                      <Text style={{ fontSize: getFontSize(22), color: IOS.label, fontWeight: '700', textAlign: 'center', textTransform: 'capitalize' }} numberOfLines={1}>
+                      <Text style={{ fontSize: getFontSize(21), color: IOS.label, fontWeight: '700', textAlign: 'center', textTransform: 'capitalize' }} numberOfLines={1}>
                         {displayCurrentToken}
                       </Text>
                       <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, marginTop: 2 }}>
@@ -282,14 +289,14 @@ export default function PatientDashboard({ navigation }) {
                       </Text>
                     </View>
 
-                    <View style={{ flex: 1, backgroundColor: IOS.surface, padding: 14, borderRadius: 16, alignItems: 'center', marginLeft: 6 }}>
+                    <View style={[{ flex: 1, backgroundColor: IOS.surface, padding: 14, borderRadius: 18, alignItems: 'center', marginLeft: 6 }, squircle]}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                         <MaterialCommunityIcons name="account-group" size={14} color={IOS.secondaryLabel} />
                         <Text style={{ fontSize: getFontSize(12), color: IOS.secondaryLabel, fontWeight: '600', marginLeft: 4 }}>
                           {t?.aheadOfYuo || 'Ahead of you'}
                         </Text>
                       </View>
-                      <Text style={{ fontSize: getFontSize(26), color: IOS.label, fontWeight: '700' }}>
+                      <Text style={{ fontSize: getFontSize(24), color: IOS.label, fontWeight: '700' }}>
                         {queueData.patientsAhead !== undefined ? queueData.patientsAhead : 0}
                       </Text>
                       <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, marginTop: 2 }}>
@@ -299,7 +306,7 @@ export default function PatientDashboard({ navigation }) {
                   </View>
 
                   {/* Estimated Wait Time */}
-                  <View style={{ backgroundColor: IOS.surface, padding: 14, borderRadius: 16, marginBottom: 14 }}>
+                  <View style={[{ backgroundColor: IOS.surface, padding: 14, borderRadius: 18, marginBottom: 14 }, squircle]}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <MaterialCommunityIcons name="clock-outline" size={19} color={IOS.secondaryLabel} />
@@ -325,7 +332,7 @@ export default function PatientDashboard({ navigation }) {
                   <TouchableOpacity 
                     onPress={() => navigation?.navigate('LiveQueue', { opdId: queueData?.opdId })}
                     activeOpacity={0.7}
-                    style={{ backgroundColor: IOS.blueSoft, paddingVertical: 14, borderRadius: 14, alignItems: 'center', justifyContent: 'center', flexDirection: 'row' }}
+                    style={[{ backgroundColor: IOS.blueSoft, paddingVertical: 14, borderRadius: 16, alignItems: 'center', justifyContent: 'center', flexDirection: 'row' }, squircle]}
                   >
                     <Text style={{ fontSize: getFontSize(16), color: IOS.blue, fontWeight: '600' }}>
                       {t?.viewLiveQueue || 'View Live Queue'}
@@ -341,9 +348,9 @@ export default function PatientDashboard({ navigation }) {
                         setCancelModalVisible(true);
                       }}
                       activeOpacity={0.6}
-                      style={{ paddingVertical: 12, alignItems: 'center', justifyContent: 'center', marginTop: 6 }}
+                      style={[{ paddingVertical: 13, alignItems: 'center', justifyContent: 'center', marginTop: 8, backgroundColor: IOS.redSoft, borderRadius: 16 }, squircle]}
                     >
-                      <Text style={{ fontSize: getFontSize(15), color: IOS.red, fontWeight: '500' }}>
+                      <Text style={{ fontSize: getFontSize(15), color: IOS.red, fontWeight: '600' }}>
                         Cancel This Token
                       </Text>
                     </TouchableOpacity>
@@ -354,7 +361,7 @@ export default function PatientDashboard({ navigation }) {
             })
           ) : (
             // Active tokens නොමැති විට පෙන්වන කොටස (Advanced empty state design)
-            <View style={[{ backgroundColor: IOS.white, borderRadius: 24, paddingVertical: 32, paddingHorizontal: 24, marginBottom: 18, alignItems: 'center' }, cardShadow]}>
+            <View style={[{ backgroundColor: IOS.white, borderRadius: 26, paddingVertical: 32, paddingHorizontal: 24, marginBottom: 18, alignItems: 'center' }, squircle, edge, cardShadow]}>
               <View style={{ width: 64, height: 64, backgroundColor: IOS.blueSoft, borderRadius: 32, justifyContent: 'center', alignItems: 'center', marginBottom: 12 }}>
                 <MaterialCommunityIcons name="clipboard-text-outline" size={30} color={IOS.blue} />
               </View>
@@ -386,9 +393,9 @@ export default function PatientDashboard({ navigation }) {
           alignItems: 'center',
           elevation: 8,
           shadowColor: IOS.blue,
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: 0.35,
+          shadowRadius: 12,
           zIndex: 50,
         }}
       >
@@ -408,15 +415,15 @@ export default function PatientDashboard({ navigation }) {
         visible={cancelModalVisible}
         onRequestClose={() => setCancelModalVisible(false)}
       >
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }}>
-          <View style={{ backgroundColor: IOS.white, width: '100%', maxWidth: 360, borderRadius: 26, padding: 22 }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }}>
+          <View style={[{ backgroundColor: IOS.white, width: '100%', maxWidth: 360, borderRadius: 28, padding: 22 }, squircle]}>
 
             {/* Modal Header Icon */}
-            <View style={{ width: 48, height: 48, backgroundColor: IOS.redSoft, borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginBottom: 12, alignSelf: 'center' }}>
+            <View style={{ width: 52, height: 52, backgroundColor: IOS.redSoft, borderRadius: 26, justifyContent: 'center', alignItems: 'center', marginBottom: 12, alignSelf: 'center' }}>
               <MaterialCommunityIcons name="alert-circle-outline" size={26} color={IOS.red} />
             </View>
 
-            <Text style={{ fontSize: getFontSize(19), color: IOS.label, fontWeight: '700', textAlign: 'center', marginBottom: 6 }}>
+            <Text style={{ fontSize: getFontSize(18), color: IOS.label, fontWeight: '700', textAlign: 'center', marginBottom: 6, letterSpacing: -0.2 }}>
               Confirm Cancellation
             </Text>
             <Text style={{ fontSize: getFontSize(14), color: IOS.tertiaryLabel, textAlign: 'center', marginBottom: 16, lineHeight: 20 }}>
@@ -425,7 +432,7 @@ export default function PatientDashboard({ navigation }) {
 
             {/* Selected Token details preview box */}
             {selectedTokenForCancel && (
-              <View style={{ backgroundColor: IOS.surface, padding: 14, borderRadius: 14, marginBottom: 16 }}>
+              <View style={[{ backgroundColor: IOS.surface, padding: 14, borderRadius: 16, marginBottom: 16 }, squircle]}>
                 <Text style={{ fontSize: getFontSize(13), color: IOS.tertiaryLabel, fontWeight: '500' }}>
                   Token No: <Text style={{ color: IOS.label, fontWeight: '700' }}>{selectedTokenForCancel.tokenNo || selectedTokenForCancel.tokenSequence}</Text>
                 </Text>
@@ -468,15 +475,15 @@ export default function PatientDashboard({ navigation }) {
               placeholderTextColor="#8E8E93"
               value={cancelReason}
               onChangeText={setCancelReason}
-              style={{
+              style={[{
                 backgroundColor: IOS.fill,
-                borderRadius: 14,
+                borderRadius: 16,
                 paddingHorizontal: 16,
                 paddingVertical: 12,
                 color: IOS.label,
                 marginBottom: 18,
                 fontSize: 15,
-              }}
+              }, squircle]}
             />
 
             {/* Modal Actions */}
@@ -489,7 +496,7 @@ export default function PatientDashboard({ navigation }) {
                   setCancelReason('');
                 }}
                 activeOpacity={0.8}
-                style={{ flex: 1, backgroundColor: IOS.fill, paddingVertical: 14, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 6 }}
+                style={[{ flex: 1, backgroundColor: IOS.fill, paddingVertical: 14, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginRight: 6 }, squircle]}
               >
                 <Text style={{ fontSize: getFontSize(16), color: IOS.label, fontWeight: '600' }}>
                   Keep Token
@@ -500,7 +507,7 @@ export default function PatientDashboard({ navigation }) {
                 disabled={cancelling}
                 onPress={handleConfirmCancel}
                 activeOpacity={0.8}
-                style={{ flex: 1, backgroundColor: IOS.red, paddingVertical: 14, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginLeft: 6 }}
+                style={[{ flex: 1, backgroundColor: IOS.red, paddingVertical: 14, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginLeft: 6 }, squircle]}
               >
                 {cancelling ? (
                   <ActivityIndicator size="small" color="#ffffff" />
@@ -517,5 +524,6 @@ export default function PatientDashboard({ navigation }) {
       </Modal>
 
     </View>
+    </SafeAreaView>
   );
 }

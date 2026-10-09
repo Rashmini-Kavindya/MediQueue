@@ -15,6 +15,93 @@ import GoogleButton from '../../components/GoogleButton';
 
 const MIN_PASSWORD_LENGTH = 6;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Loose phone check (display only): optional +, 9-15 digits after removing spaces/dashes
+const PHONE_REGEX = /^\+?\d{9,15}$/;
+
+const COLORS = {
+  error: '#DC2626',
+  valid: '#16A34A',
+  primary: '#0052CC',
+  weak: '#EF4444',
+  fair: '#F59E0B',
+  strong: '#16A34A',
+  track: '#E2E8F0',
+};
+
+const softShadow = {
+  shadowColor: '#0F172A',
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.06,
+  shadowRadius: 14,
+  elevation: 3,
+};
+
+/* ------------------------------------------------------------------ */
+/* Small UI helpers (no business logic)                                */
+/* ------------------------------------------------------------------ */
+
+// Message shown under a field: red error or green "looks good"
+function FieldFeedback({ status, message }) {
+  if (status !== 'error' && status !== 'valid') return null;
+
+  const color = status === 'error' ? COLORS.error : COLORS.valid;
+  const icon = status === 'error' ? 'alert-circle' : 'checkmark-circle';
+
+  return (
+    <View className="flex-row items-center mt-1.5 px-1">
+      <Ionicons name={icon} size={14} color={color} />
+      <Text className="text-xs ml-1.5 flex-1" style={{ color }}>
+        {message}
+      </Text>
+    </View>
+  );
+}
+
+// 3-segment password strength meter
+function PasswordStrength({ password, t }) {
+  if (!password) return null;
+
+  let score = 0;
+  if (password.length >= MIN_PASSWORD_LENGTH) score += 1;
+  if (password.length >= 8) score += 1;
+  if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score += 1;
+  if (/\d/.test(password)) score += 1;
+  if (/[^A-Za-z0-9]/.test(password)) score += 1;
+
+  let level = 1;
+  let label = t('strength_weak', 'Weak');
+  let color = COLORS.weak;
+  if (password.length >= MIN_PASSWORD_LENGTH) {
+    if (score >= 4) {
+      level = 3;
+      label = t('strength_strong', 'Strong');
+      color = COLORS.strong;
+    } else if (score >= 3) {
+      level = 2;
+      label = t('strength_fair', 'Fair');
+      color = COLORS.fair;
+    }
+  }
+
+  return (
+    <View className="flex-row items-center mt-2 px-1">
+      <View className="flex-row flex-1">
+        {[1, 2, 3].map((i) => (
+          <View
+            key={i}
+            className="flex-1 h-1.5 rounded-full mr-1.5"
+            style={{ backgroundColor: i <= level ? color : COLORS.track }}
+          />
+        ))}
+      </View>
+      <Text className="text-xs font-semibold ml-2" style={{ color }}>
+        {label}
+      </Text>
+    </View>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 
 export default function RegisterScreen({ route, navigation }) {
   const { t } = useTranslation();
@@ -34,6 +121,115 @@ export default function RegisterScreen({ route, navigation }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // UI only: which fields the user has started typing in
+  const [touched, setTouched] = useState({});
+
+  const markTouched = (key) =>
+    setTouched((prev) => (prev[key] ? prev : { ...prev, [key]: true }));
+
+  const onChangeFirstName = (v) => { setFirstName(v); markTouched('firstName'); };
+  const onChangeLastName = (v) => { setLastName(v); markTouched('lastName'); };
+  const onChangeNic = (v) => { setNicOrPatientId(v); markTouched('nic'); };
+  const onChangePhone = (v) => { setPhone(v); markTouched('phone'); };
+  const onChangeEmail = (v) => { setEmail(v); markTouched('email'); };
+  const onChangePassword = (v) => { setPassword(v); markTouched('password'); };
+  const onChangeConfirm = (v) => { setConfirmPassword(v); markTouched('confirm'); };
+
+  /* ---------------- Live validation (derived, display only) ---------------- */
+
+  // After a failed submit, `error` is set -> show "required" on empty fields too
+  const submitAttempted = !!error;
+
+  const requiredMsg = t('field_required', 'This field is required');
+
+  const validateRequiredText = (value, key) => {
+    if (!value.trim()) {
+      return touched[key] || submitAttempted
+        ? { status: 'error', message: requiredMsg }
+        : { status: 'idle' };
+    }
+    return { status: 'valid', message: t('looks_good', 'Looks good') };
+  };
+
+  const firstNameState = validateRequiredText(firstName, 'firstName');
+  const lastNameState = validateRequiredText(lastName, 'lastName');
+  const nicState = validateRequiredText(nicOrPatientId, 'nic');
+
+  const cleanPhoneLive = phone.replace(/[\s-]/g, '');
+  let phoneState = { status: 'idle' };
+  if (!phone.trim()) {
+    if (touched.phone || submitAttempted) {
+      phoneState = { status: 'error', message: requiredMsg };
+    }
+  } else if (!PHONE_REGEX.test(cleanPhoneLive)) {
+    phoneState = {
+      status: 'error',
+      message: t('invalid_phone', 'Enter a valid phone number (digits only)'),
+    };
+  } else {
+    phoneState = { status: 'valid', message: t('looks_good', 'Looks good') };
+  }
+
+  // Email is optional
+  let emailState = { status: 'idle' };
+  if (email.trim()) {
+    emailState = EMAIL_REGEX.test(email.trim())
+      ? { status: 'valid', message: t('looks_good', 'Looks good') }
+      : {
+          status: 'error',
+          message: t('invalid_email', 'Please enter a valid email address'),
+        };
+  }
+
+  let passwordState = { status: 'idle' };
+  if (!password) {
+    if (touched.password || submitAttempted) {
+      passwordState = { status: 'error', message: requiredMsg };
+    }
+  } else if (password.length < MIN_PASSWORD_LENGTH) {
+    passwordState = {
+      status: 'error',
+      message: t('password_min', 'Password must be at least 6 characters'),
+    };
+  } else {
+    passwordState = { status: 'valid', message: t('looks_good', 'Looks good') };
+  }
+
+  let confirmState = { status: 'idle' };
+  if (!confirmPassword) {
+    if (touched.confirm || submitAttempted) {
+      confirmState = { status: 'error', message: requiredMsg };
+    }
+  } else if (confirmPassword !== password) {
+    confirmState = {
+      status: 'error',
+      message: t('passwords_dont_match', 'Passwords do not match'),
+    };
+  } else {
+    confirmState = {
+      status: 'valid',
+      message: t('passwords_match', 'Passwords match'),
+    };
+  }
+
+  /* ---------------- Progress (required fields only) ---------------- */
+
+  const requiredStates = [
+    firstNameState,
+    lastNameState,
+    nicState,
+    phoneState,
+    passwordState,
+    confirmState,
+  ];
+  const totalSteps = requiredStates.length;
+  const doneSteps = requiredStates.filter((s) => s.status === 'valid').length;
+  const progressPct = Math.round((doneSteps / totalSteps) * 100);
+  const isComplete = doneSteps === totalSteps && emailState.status !== 'error';
+  const progressColor = isComplete ? COLORS.valid : COLORS.primary;
+
+  /* ---------------- Submit (logic unchanged) ---------------- */
 
   const handleRegister = async () => {
     setError('');
@@ -101,25 +297,66 @@ export default function RegisterScreen({ route, navigation }) {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F8F9FE]">
+    // className is not used on SafeAreaView (third-party component) -> style instead
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#F2F2F7' }}>
       {/* Header */}
-      <View className="flex-row items-center justify-between px-5 py-4 bg-white border-b border-slate-100">
-        <TouchableOpacity onPress={() => navigation.goBack()} className="p-1">
-          <Ionicons name="arrow-back" size={24} color="#1E293B" />
+      <View className="flex-row items-center justify-between px-5 py-3 bg-[#F2F2F7]">
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          className="w-10 h-10 rounded-full bg-white items-center justify-center"
+          style={softShadow}
+        >
+          <Ionicons name="chevron-back" size={22} color="#0F172A" />
         </TouchableOpacity>
-        <Text className="text-base font-bold text-slate-800">{titleText}</Text>
-        <View className="w-6" />
+        <Text className="text-[17px] font-semibold text-slate-900">{titleText}</Text>
+        <View className="w-10" />
+      </View>
+
+      {/* Progress (stays visible while scrolling) */}
+      <View className="px-5 pb-3 bg-[#F2F2F7]">
+        <View className="flex-row items-center justify-between mb-2">
+          <Text className="text-xs font-semibold text-slate-500">
+            {t('form_progress', 'Form progress')}
+          </Text>
+          <Text className="text-xs font-bold" style={{ color: progressColor }}>
+            {doneSteps}/{totalSteps} · {progressPct}%
+          </Text>
+        </View>
+        <View
+          className="h-2 rounded-full overflow-hidden"
+          style={{ backgroundColor: COLORS.track }}
+        >
+          <View
+            style={{
+              height: '100%',
+              width: `${progressPct}%`,
+              borderRadius: 999,
+              backgroundColor: progressColor,
+            }}
+          />
+        </View>
+        {isComplete && (
+          <View className="flex-row items-center mt-2">
+            <Ionicons name="checkmark-circle" size={14} color={COLORS.valid} />
+            <Text className="text-xs ml-1.5" style={{ color: COLORS.valid }}>
+              {t('ready_to_continue', 'All set! You can continue now.')}
+            </Text>
+          </View>
+        )}
       </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 24 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 20 }}
       >
         {/* Banner */}
-        <View className="flex-row items-center bg-white p-4 rounded-2xl border border-slate-100 shadow-sm mb-6">
-          <View className="w-12 h-12 bg-blue-50 rounded-xl justify-center items-center mr-4">
-            <Ionicons name="clipboard-outline" size={24} color="#2563EB" />
+        <View
+          className="flex-row items-center bg-white p-4 rounded-[20px] mb-6"
+          style={softShadow}
+        >
+          <View className="w-12 h-12 bg-[#E8F0FE] rounded-[16px] justify-center items-center mr-4">
+            <Ionicons name="clipboard-outline" size={24} color="#0052cc" />
           </View>
           <View className="flex-1">
             <Text className="text-base font-bold text-slate-900">{titleText}</Text>
@@ -131,94 +368,129 @@ export default function RegisterScreen({ route, navigation }) {
 
         {/* Input Fields */}
         <View className="gap-4">
-          <AuthField
-            label={t('first_name', 'First name')}
-            icon="person-outline"
-            placeholder={t('first_name_ph', 'Enter your first name')}
-            value={firstName}
-            onChangeText={setFirstName}
-          />
-          <AuthField
-            label={t('last_name', 'Last name')}
-            icon="person-outline"
-            placeholder={t('last_name_ph', 'Enter your last name')}
-            value={lastName}
-            onChangeText={setLastName}
-          />
-          <AuthField
-            label={t('nic_or_id', 'NIC / Patient ID')}
-            icon="card-outline"
-            placeholder={t('nic_or_id_ph', 'Enter your NIC or patient ID')}
-            autoCapitalize="characters"
-            value={nicOrPatientId}
-            onChangeText={setNicOrPatientId}
-          />
-          <AuthField
-            label={t('phone_number', 'Phone number')}
-            hint={t('phone_hint_otp', 'We will send your verification code to this number by SMS')}
-            icon="call-outline"
-            placeholder={t('phone_ph', 'Enter your phone number')}
-            keyboardType="phone-pad"
-            value={phone}
-            onChangeText={setPhone}
-          />
-          <AuthField
-            label={t('email_optional', 'Email address (optional)')}
-            hint={t('email_hint_optional', 'You can use this to reset your password by email')}
-            icon="mail-outline"
-            placeholder="name@example.com"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            value={email}
-            onChangeText={setEmail}
-          />
-          <AuthField
-            label={t('password', 'Password')}
-            icon="lock-closed-outline"
-            placeholder={t('password_ph', 'Enter your password')}
-            isPassword
-            value={password}
-            onChangeText={setPassword}
-          />
-          <AuthField
-            label={t('confirm_password', 'Confirm password')}
-            icon="lock-closed-outline"
-            placeholder={t('confirm_password_ph', 'Re-enter your password')}
-            isPassword
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-          />
+          <View>
+            <AuthField
+              label={t('first_name', 'First name')}
+              icon="person-outline"
+              placeholder={t('first_name_ph', 'Enter your first name')}
+              value={firstName}
+              onChangeText={onChangeFirstName}
+            />
+            <FieldFeedback status={firstNameState.status} message={firstNameState.message} />
+          </View>
+
+          <View>
+            <AuthField
+              label={t('last_name', 'Last name')}
+              icon="person-outline"
+              placeholder={t('last_name_ph', 'Enter your last name')}
+              value={lastName}
+              onChangeText={onChangeLastName}
+            />
+            <FieldFeedback status={lastNameState.status} message={lastNameState.message} />
+          </View>
+
+          <View>
+            <AuthField
+              label={t('nic_or_id', 'NIC / Patient ID')}
+              icon="card-outline"
+              placeholder={t('nic_or_id_ph', 'Enter your NIC or patient ID')}
+              autoCapitalize="characters"
+              value={nicOrPatientId}
+              onChangeText={onChangeNic}
+            />
+            <FieldFeedback status={nicState.status} message={nicState.message} />
+          </View>
+
+          <View>
+            <AuthField
+              label={t('phone_number', 'Phone number')}
+              hint={t('phone_hint_otp', 'We will send your verification code to this number by SMS')}
+              icon="call-outline"
+              placeholder={t('phone_ph', 'Enter your phone number')}
+              keyboardType="phone-pad"
+              value={phone}
+              onChangeText={onChangePhone}
+            />
+            <FieldFeedback status={phoneState.status} message={phoneState.message} />
+          </View>
+
+          <View>
+            <AuthField
+              label={t('email_optional', 'Email address (optional)')}
+              hint={t('email_hint_optional', 'You can use this to reset your password by email')}
+              icon="mail-outline"
+              placeholder="name@example.com"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              value={email}
+              onChangeText={onChangeEmail}
+            />
+            <FieldFeedback status={emailState.status} message={emailState.message} />
+          </View>
+
+          <View>
+            <AuthField
+              label={t('password', 'Password')}
+              icon="lock-closed-outline"
+              placeholder={t('password_ph', 'Enter your password')}
+              isPassword
+              value={password}
+              onChangeText={onChangePassword}
+            />
+            <PasswordStrength password={password} t={t} />
+            <FieldFeedback status={passwordState.status} message={passwordState.message} />
+          </View>
+
+          <View>
+            <AuthField
+              label={t('confirm_password', 'Confirm password')}
+              icon="lock-closed-outline"
+              placeholder={t('confirm_password_ph', 'Re-enter your password')}
+              isPassword
+              value={confirmPassword}
+              onChangeText={onChangeConfirm}
+            />
+            <FieldFeedback status={confirmState.status} message={confirmState.message} />
+          </View>
         </View>
 
         {/* Info Banner */}
-        <View className="flex-row items-center bg-blue-50/80 p-3.5 rounded-xl border border-blue-100 my-6">
-          <Ionicons name="information-circle-outline" size={18} color="#2563EB" />
-          <Text className="text-xs text-blue-800 ml-2.5 flex-1 leading-4">
+        <View className="flex-row items-center bg-[#E8F0FE] p-3.5 rounded-2xl my-6">
+          <Ionicons name="information-circle-outline" size={20} color="#0052cc" />
+          <Text className="text-xs text-blue-900 ml-2.5 flex-1 leading-4">
             {t('sms_info', 'We will send you queue updates via SMS to this number.')}
           </Text>
         </View>
 
         {/* Inline error */}
         {!!error && (
-          <View className="bg-red-50 border border-red-100 rounded-xl p-3 mb-4">
+          <View className="bg-red-50 border border-red-100 rounded-2xl p-3.5 mb-4">
             <Text className="text-xs text-red-700">{error}</Text>
           </View>
         )}
 
         {/* Submit */}
         <TouchableOpacity
-          activeOpacity={0.8}
+          activeOpacity={0.85}
           onPress={handleRegister}
           disabled={loading}
-          className="bg-[#0052CC] py-3.5 rounded-xl flex-row items-center justify-center shadow-sm"
-          style={{ opacity: loading ? 0.7 : 1 }}
+          className="bg-[#0052CC] h-[54px] rounded-[16px] flex-row items-center justify-center"
+          style={{
+            opacity: loading ? 0.7 : 1,
+            shadowColor: '#0052cc',
+            shadowOffset: { width: 0, height: 6 },
+            shadowOpacity: 0.28,
+            shadowRadius: 12,
+            elevation: 5,
+          }}
         >
           {loading ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
             <>
-              <Text className="text-white font-bold text-base mr-2">{t('continue', 'Continue')}</Text>
+              <Text className="text-white font-semibold text-base mr-2">{t('continue', 'Continue')}</Text>
               <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
             </>
           )}
@@ -230,7 +502,7 @@ export default function RegisterScreen({ route, navigation }) {
         {/* Footer */}
         <View className="flex-row justify-center mt-4 mb-6">
           <TouchableOpacity onPress={() => navigation.navigate('Login', { role })}>
-            <Text className="text-sm font-semibold text-blue-600">
+            <Text className="text-sm font-semibold text-[#0052cc]">
               {t('already_registered', 'Already registered?')}
             </Text>
           </TouchableOpacity>
