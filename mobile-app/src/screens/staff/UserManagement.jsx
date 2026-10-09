@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   listUsersAdmin, getUserAdmin, addStaffAdmin, updateUserAdmin,
   deactivateUserAdmin, permanentlyDeleteStaffAdmin
@@ -29,6 +30,7 @@ function Field({ label, value, onChangeText, ...props }) {
 }
 
 export default function UserManagement({ navigation }) {
+  const safeInsets = useSafeAreaInsets();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -144,7 +146,7 @@ export default function UserManagement({ navigation }) {
     <Text style={s.finePrint}>Only staff can be created here. Patients and caregivers register through the normal verification flow.</Text>
   </>;
 
-  return <View style={s.outer}><View style={s.screen}>
+  return <SafeAreaView style={s.outer} edges={['top', 'bottom']}><View style={s.screen}>
     <View style={s.topbar}>
       <TouchableOpacity accessibilityLabel="Open menu" onPress={()=>navigation.openDrawer()} style={s.topIcon}>
         <Ionicons name="menu" size={23} color={BLUE}/>
@@ -204,7 +206,7 @@ export default function UserManagement({ navigation }) {
         </View>) }
     </ScrollView>
     <Modal visible={!!modal} transparent animationType="fade" onRequestClose={close}>
-      <View style={s.scrim}><View style={s.modalBox}>
+      <View style={[s.scrim, { paddingTop: Math.max(16, safeInsets.top + 8), paddingBottom: Math.max(16, safeInsets.bottom + 8) }]}><View style={s.modalBox}>
         <View style={s.modalHeader}>
           <Text style={s.modalTitle}>{modal==='add'?'Add Staff Account':modal==='edit'?'Edit User':modal==='view'?'User Details':modal==='activate'?'Reactivate User?':modal==='deactivate'?'Deactivate User?':'Delete User Permanently?'}</Text>
           <TouchableOpacity disabled={busy} onPress={close}><Ionicons name="close-circle-outline" size={25} color="#64748B"/></TouchableOpacity>
@@ -245,7 +247,7 @@ export default function UserManagement({ navigation }) {
         </ScrollView>
       </View></View>
     </Modal>
-  </View></View>;
+  </View></SafeAreaView>;
 }
 
 const s = StyleSheet.create({
