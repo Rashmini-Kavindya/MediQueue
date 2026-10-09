@@ -22,6 +22,40 @@ import {
 import { AuthContext } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import API from '../../services/api';
+import AppHeader from '../../components/AppHeader'; // Reusable Header එක import කිරීම
+
+// iOS system colors - blue as accent, soft grouped background + white cards
+const IOS = {
+  blue: '#007AFF',
+  blueSoft: 'rgba(0,122,255,0.10)',
+  green: '#34C759',
+  greenSoft: 'rgba(52,199,89,0.12)',
+  red: '#FF3B30',
+  redSoft: 'rgba(255,59,48,0.08)',
+  label: '#1C1C1E',
+  secondaryLabel: '#636366',
+  tertiaryLabel: '#8E8E93',
+  chevron: '#C7C7CC',
+  fill: '#EFEFF4',
+  surface: '#F7F7FA',
+  separator: '#E9E9EE',
+  groupedBg: '#F4F5F9',
+  white: '#FFFFFF',
+};
+
+// iOS style soft shadow for cards
+const cardShadow = {
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.05,
+  shadowRadius: 10,
+  elevation: 2,
+};
+
+// Bottom sheet pieces shared by all modals
+const sheetOverlay = { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' };
+const sheetBody = { backgroundColor: IOS.white, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 22, paddingTop: 10, paddingBottom: 34 };
+const sheetHandle = { width: 38, height: 5, borderRadius: 3, backgroundColor: '#D1D1D6', alignSelf: 'center', marginBottom: 14 };
 
 export default function Profile({ navigation }) {
   const { user, logout } = useContext(AuthContext);
@@ -131,205 +165,319 @@ export default function Profile({ navigation }) {
 
   const isNicVerified = Boolean(patientNic && patientNic !== 'N/A');
 
+  // Personal information (VIEW ONLY) - values come from the /users/me response
+  const formatDate = (value) => {
+    if (!value) return 'N/A';
+    const d = new Date(value);
+    return isNaN(d.getTime())
+      ? 'N/A'
+      : d.toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' });
+  };
+  const formatDateTime = (value) => {
+    if (!value) return 'N/A';
+    const d = new Date(value);
+    return isNaN(d.getTime())
+      ? 'N/A'
+      : `${d.toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' })}, ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  };
+  const languageLabelMap = { en: 'English', si: 'Sinhala', ta: 'Tamil' };
+
+  const patientId = profileData?.patientId || user?.patientId || 'N/A';
+  const accountStatusRaw = profileData?.status || 'active';
+  const accountStatus = accountStatusRaw.charAt(0).toUpperCase() + accountStatusRaw.slice(1);
+  const preferredLanguage = languageLabelMap[profileData?.language] || selectedLanguage || 'N/A';
+
+  const infoRows = [
+    { key: 'patientId', icon: 'hash', label: 'Patient ID', value: patientId },
+    { key: 'nic', icon: 'credit-card', label: 'NIC', value: patientNic },
+    { key: 'phone', icon: 'phone', label: 'Phone', value: patientPhone },
+    { key: 'email', icon: 'mail', label: 'Email', value: patientEmail },
+    { key: 'language', icon: 'globe', label: 'Preferred language', value: preferredLanguage },
+    { key: 'status', icon: 'activity', label: 'Account status', value: accountStatus, isStatus: true },
+    { key: 'since', icon: 'calendar', label: 'Member since', value: formatDate(profileData?.createdAt) },
+    { key: 'lastLogin', icon: 'clock', label: 'Last login', value: formatDateTime(profileData?.lastLoginAt) },
+  ];
+
+  // Reusable bottom sheet header (title + close)
+  const renderSheetHeader = (title) => (
+    <>
+      <View style={sheetHandle} />
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <Text style={{ fontSize: getFontSize(20), color: IOS.label, fontWeight: '700' }}>
+          {title}
+        </Text>
+        <TouchableOpacity onPress={() => setActiveModal(null)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <Ionicons name="close-circle" size={26} color={IOS.chevron} />
+        </TouchableOpacity>
+      </View>
+    </>
+  );
+
+  // Reusable option row for language / text size sheets
+  const renderOptionStyle = (selected) => ({
+    paddingVertical: 15,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    marginBottom: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: selected ? IOS.blueSoft : IOS.surface,
+  });
+
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-slate-50">
+    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: IOS.groupedBg }}>
+      {/* Reusable AppHeader එක මෙතැනට ඇතුළත් කර ඇත */}
+      <AppHeader
+        userName={patientName}
+        onNotificationPress={() => navigation?.navigate('Alerts')}
+        onPrescriptionPress={() => {
+          console.log('Prescription icon pressed');
+        }}
+      />
+
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 30 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        contentContainerStyle={{ paddingBottom: 40 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={IOS.tertiaryLabel} colors={[IOS.blue]} />}
       >
-        {/* Header Section */}
-        <View className="flex-row justify-between items-center px-5 pt-3 pb-2">
-          <View className="flex-row items-center">
-            <View className="w-9 h-9 justify-center items-center mr-2">
-              <MaterialCommunityIcons name="hospital-box-outline" size={32} color="#0284c7" />
-            </View>
-            <View>
-              <Text style={{ fontSize: getFontSize(10) }} className="font-bold text-blue-600 tracking-wider">
-                {t?.appTitle || 'MEDIQUEUE'}
-              </Text>
-              <Text style={{ fontSize: getFontSize(18) }} className="font-bold text-slate-900 leading-5">
-                {t?.profileHeader || 'Profile'}
-              </Text>
-            </View>
-          </View>
-
-          <TouchableOpacity className="w-10 h-10 bg-blue-600 rounded-full justify-center items-center shadow-sm">
-            <Ionicons name="person" size={20} color="#ffffff" />
-          </TouchableOpacity>
-        </View>
 
         {loading ? (
-          <View className="py-20 justify-center items-center">
-            <ActivityIndicator size="large" color="#0284c7" />
+          <View style={{ paddingVertical: 80, justifyContent: 'center', alignItems: 'center' }}>
+            <ActivityIndicator size="large" color={IOS.tertiaryLabel} />
           </View>
         ) : (
           <>
-            <View className="px-5 my-3 flex-row justify-between items-start">
-              <View className="flex-1 mr-2">
-                <Text style={{ fontSize: getFontSize(24) }} className="font-extrabold text-slate-900">
+            {/* Title + NIC badge */}
+            <View style={{ paddingHorizontal: 20, marginTop: 12, marginBottom: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <View style={{ flex: 1, marginRight: 8 }}>
+                <Text style={{ fontSize: getFontSize(28), color: IOS.label, fontWeight: '700', letterSpacing: 0.3 }}>
                   {t?.patientProfile || 'Patient Profile'}
                 </Text>
-                <Text style={{ fontSize: getFontSize(12) }} className="font-medium text-slate-500 mt-0.5 leading-4">
+                <Text style={{ fontSize: getFontSize(13), color: IOS.tertiaryLabel, marginTop: 2 }}>
                   {t?.profileSubtitle || 'Manage your account settings'}
                 </Text>
               </View>
 
               {isNicVerified && (
-                <View className="bg-emerald-200/70 border border-emerald-300 px-3 py-1.5 rounded-full flex-row items-center">
-                  <Octicons name="verified" size={13} color="#047857" />
-                  <Text style={{ fontSize: getFontSize(11) }} className="font-bold text-emerald-800 ml-1.5">
+                <View style={{ backgroundColor: IOS.greenSoft, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
+                  <Octicons name="verified" size={13} color={IOS.green} />
+                  <Text style={{ fontSize: getFontSize(11), color: IOS.secondaryLabel, fontWeight: '600', marginLeft: 6 }}>
                     NIC: {patientNic}
                   </Text>
                 </View>
               )}
             </View>
 
-            {/* Profile Info Details */}
-            <View className="items-center my-4">
-              <View className="relative mb-3">
+            {/* Profile Info Card */}
+            <View style={[{ backgroundColor: IOS.white, borderRadius: 24, marginHorizontal: 20, marginTop: 12, paddingVertical: 24, paddingHorizontal: 18, alignItems: 'center' }, cardShadow]}>
+              <View style={{ marginBottom: 14 }}>
                 <Image
                   source={{ uri: avatarUrl }}
-                  className="w-24 h-24 rounded-full border-2 border-blue-200 bg-slate-200"
+                  style={{ width: 96, height: 96, borderRadius: 48, backgroundColor: IOS.fill }}
                 />
-                <View className="absolute bottom-0 right-0 bg-blue-600 rounded-full p-1 border-2 border-white">
+                <View style={{ position: 'absolute', bottom: 0, right: 0, backgroundColor: IOS.blue, borderRadius: 999, padding: 4, borderWidth: 2, borderColor: '#fff' }}>
                   <MaterialCommunityIcons name="check-decagram" size={14} color="#ffffff" />
                 </View>
               </View>
 
-              <Text style={{ fontSize: getFontSize(24) }} className="font-black text-slate-900">
+              <Text style={{ fontSize: getFontSize(24), color: IOS.label, fontWeight: '700', textAlign: 'center' }}>
                 {patientName}
               </Text>
-              <Text style={{ fontSize: getFontSize(14) }} className="font-semibold text-slate-500 mt-0.5">
-                {patientPhone} • {patientEmail}
+              <Text style={{ fontSize: getFontSize(14), color: IOS.tertiaryLabel, marginTop: 4, textAlign: 'center' }}>
+                {patientPhone} {patientEmail !== 'N/A' ? `• ${patientEmail}` : ''}
               </Text>
 
-              <View className="mt-3 bg-blue-50 border border-blue-100 px-4 py-2 rounded-2xl flex-row items-center">
-                <MaterialCommunityIcons name="medical-bag" size={16} color="#0284c7" />
-                <Text style={{ fontSize: getFontSize(12) }} className="font-bold text-slate-700 ml-2">
+              <View style={{ marginTop: 14, backgroundColor: IOS.fill, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, flexDirection: 'row', alignItems: 'center' }}>
+                <MaterialCommunityIcons name="medical-bag" size={16} color={IOS.secondaryLabel} />
+                <Text style={{ fontSize: getFontSize(12), color: IOS.secondaryLabel, fontWeight: '600', marginLeft: 8 }}>
                   {roleDisplay} ACCOUNT
                 </Text>
               </View>
             </View>
 
+            {/* Personal Information Section (VIEW ONLY - no edit actions) */}
+            <View style={{ paddingHorizontal: 20, marginTop: 24 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, paddingHorizontal: 4 }}>
+                <Text style={{ fontSize: getFontSize(19), color: IOS.label, fontWeight: '700', letterSpacing: 0.3 }}>
+                  Personal Information
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Feather name="lock" size={12} color={IOS.tertiaryLabel} />
+                  <Text style={{ fontSize: getFontSize(13), color: IOS.tertiaryLabel, fontWeight: '500', marginLeft: 4 }}>
+                    Read only
+                  </Text>
+                </View>
+              </View>
+
+              <View style={[{ backgroundColor: IOS.white, borderRadius: 22, overflow: 'hidden' }, cardShadow]}>
+                {infoRows.map((row, index) => (
+                  <View
+                    key={row.key}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      paddingVertical: 14,
+                      paddingHorizontal: 16,
+                      borderBottomWidth: index === infoRows.length - 1 ? 0 : 1,
+                      borderBottomColor: IOS.separator,
+                    }}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 12 }}>
+                      <View style={{ width: 32, height: 32, borderRadius: 9, backgroundColor: IOS.fill, justifyContent: 'center', alignItems: 'center', marginRight: 12 }}>
+                        <Feather name={row.icon} size={16} color={IOS.secondaryLabel} />
+                      </View>
+                      <Text style={{ fontSize: getFontSize(15), color: IOS.secondaryLabel, fontWeight: '500' }}>
+                        {row.label}
+                      </Text>
+                    </View>
+
+                    <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' }}>
+                      {row.isStatus && (
+                        <View style={{ width: 8, height: 8, borderRadius: 4, marginRight: 6, backgroundColor: accountStatusRaw === 'active' ? IOS.green : '#FF9500' }} />
+                      )}
+                      <Text
+                        selectable
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                        style={{ flexShrink: 1, fontSize: getFontSize(15), color: IOS.label, fontWeight: '500', textAlign: 'right' }}
+                      >
+                        {row.value}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+
+              <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, marginTop: 10, paddingHorizontal: 6, lineHeight: 17 }}>
+                These details are managed by the hospital and can't be edited here.
+              </Text>
+            </View>
+
             {/* App Settings Section */}
-            <View className="px-5 mt-4">
-              <View className="flex-row justify-between items-center mb-3">
-                <Text style={{ fontSize: getFontSize(12) }} className="font-extrabold text-slate-500 tracking-wider uppercase">
+            <View style={{ paddingHorizontal: 20, marginTop: 24 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, paddingHorizontal: 4 }}>
+                <Text style={{ fontSize: getFontSize(19), color: IOS.label, fontWeight: '700', letterSpacing: 0.3 }}>
                   {t?.appSettings || 'App Settings'}
                 </Text>
-                <Text style={{ fontSize: getFontSize(12) }} className="font-semibold text-slate-400">
+                <Text style={{ fontSize: getFontSize(13), color: IOS.tertiaryLabel, fontWeight: '500' }}>
                   {t?.general || 'General'}
                 </Text>
               </View>
 
-              <View className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+              <View style={[{ backgroundColor: IOS.white, borderRadius: 22, overflow: 'hidden' }, cardShadow]}>
                 {/* Language Trigger */}
                 <TouchableOpacity 
                   onPress={() => setActiveModal('language')}
-                  className="flex-row items-center justify-between p-4 border-b border-slate-100"
+                  activeOpacity={0.6}
+                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: IOS.separator }}
                 >
-                  <View className="flex-row items-center">
-                    <View className="w-10 h-10 rounded-2xl bg-blue-50 justify-center items-center mr-3">
-                      <Feather name="globe" size={18} color="#0284c7" />
+                  <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                    <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: IOS.blue, justifyContent: 'center', alignItems: 'center', marginRight: 14 }}>
+                      <Feather name="globe" size={18} color="#fff" />
                     </View>
-                    <View>
-                      <Text style={{ fontSize: getFontSize(14) }} className="font-bold text-slate-800">
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: getFontSize(16), color: IOS.label, fontWeight: '500' }}>
                         {t?.language || 'Language'}
                       </Text>
-                      <Text style={{ fontSize: getFontSize(12) }} className="text-slate-400 mt-0.5">
+                      <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, marginTop: 2 }}>
                         {t?.languageSubtitle || 'Change application language'}
                       </Text>
                     </View>
                   </View>
-                  <View className="flex-row items-center">
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     {savingLanguage ? (
-                      <ActivityIndicator size="small" color="#0284c7" className="mr-2" />
+                      <ActivityIndicator size="small" color={IOS.tertiaryLabel} style={{ marginRight: 8 }} />
                     ) : (
-                      <Text style={{ fontSize: getFontSize(12) }} className="font-semibold text-slate-500 mr-1">
+                      <Text style={{ fontSize: getFontSize(14), color: IOS.tertiaryLabel, marginRight: 4 }}>
                         {selectedLanguage}
                       </Text>
                     )}
-                    <Feather name="chevron-right" size={16} color="#94a3b8" />
+                    <Feather name="chevron-right" size={18} color={IOS.chevron} />
                   </View>
                 </TouchableOpacity>
 
                 {/* Notifications Trigger */}
                 <TouchableOpacity 
                   onPress={() => setActiveModal('notifications')}
-                  className="flex-row items-center justify-between p-4 border-b border-slate-100"
+                  activeOpacity={0.6}
+                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: IOS.separator }}
                 >
-                  <View className="flex-row items-center">
-                    <View className="w-10 h-10 rounded-2xl bg-blue-50 justify-center items-center mr-3">
-                      <Ionicons name="notifications-outline" size={18} color="#0284c7" />
+                  <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                    <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#FF9500', justifyContent: 'center', alignItems: 'center', marginRight: 14 }}>
+                      <Ionicons name="notifications" size={18} color="#fff" />
                     </View>
-                    <View>
-                      <Text style={{ fontSize: getFontSize(14) }} className="font-bold text-slate-800">
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: getFontSize(16), color: IOS.label, fontWeight: '500' }}>
                         {t?.notifications || 'Notifications'}
                       </Text>
-                      <Text style={{ fontSize: getFontSize(12) }} className="text-slate-400 mt-0.5">
+                      <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, marginTop: 2 }}>
                         {t?.notificationsSubtitle || 'Manage alerts and updates'}
                       </Text>
                     </View>
                   </View>
-                  <Feather name="chevron-right" size={16} color="#94a3b8" />
+                  <Feather name="chevron-right" size={18} color={IOS.chevron} />
                 </TouchableOpacity>
 
                 {/* Accessibility Trigger */}
                 <TouchableOpacity 
                   onPress={() => setActiveModal('accessibility')}
-                  className="flex-row items-center justify-between p-4 border-b border-slate-100"
+                  activeOpacity={0.6}
+                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: IOS.separator }}
                 >
-                  <View className="flex-row items-center">
-                    <View className="w-10 h-10 rounded-2xl bg-blue-50 justify-center items-center mr-3">
-                      <MaterialCommunityIcons name="format-size" size={20} color="#0284c7" />
+                  <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                    <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#5856D6', justifyContent: 'center', alignItems: 'center', marginRight: 14 }}>
+                      <MaterialCommunityIcons name="format-size" size={20} color="#fff" />
                     </View>
-                    <View>
-                      <Text style={{ fontSize: getFontSize(14) }} className="font-bold text-slate-800">
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: getFontSize(16), color: IOS.label, fontWeight: '500' }}>
                         {t?.accessibility || 'Text Size'}
                       </Text>
-                      <Text style={{ fontSize: getFontSize(12) }} className="text-slate-400 mt-0.5">
+                      <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, marginTop: 2 }}>
                         {t?.accessibilitySubtitle || 'Adjust font sizes'}
                       </Text>
                     </View>
                   </View>
-                  <View className="flex-row items-center">
-                    <Text style={{ fontSize: getFontSize(12) }} className="font-semibold text-slate-500 mr-1">
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={{ fontSize: getFontSize(14), color: IOS.tertiaryLabel, marginRight: 4 }}>
                       {textSize}
                     </Text>
-                    <Feather name="chevron-right" size={16} color="#94a3b8" />
+                    <Feather name="chevron-right" size={18} color={IOS.chevron} />
                   </View>
                 </TouchableOpacity>
 
                 {/* Privacy Trigger */}
                 <TouchableOpacity 
                   onPress={() => setActiveModal('privacy')}
-                  className="flex-row items-center justify-between p-4"
+                  activeOpacity={0.6}
+                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 }}
                 >
-                  <View className="flex-row items-center">
-                    <View className="w-10 h-10 rounded-2xl bg-blue-50 justify-center items-center mr-3">
-                      <Feather name="lock" size={18} color="#0284c7" />
+                  <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                    <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: IOS.green, justifyContent: 'center', alignItems: 'center', marginRight: 14 }}>
+                      <Feather name="lock" size={18} color="#fff" />
                     </View>
-                    <View>
-                      <Text style={{ fontSize: getFontSize(14) }} className="font-bold text-slate-800">
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: getFontSize(16), color: IOS.label, fontWeight: '500' }}>
                         {t?.privacy || 'Privacy & Security'}
                       </Text>
-                      <Text style={{ fontSize: getFontSize(12) }} className="text-slate-400 mt-0.5">
+                      <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, marginTop: 2 }}>
                         {t?.privacySubtitle || 'Biometrics and PIN'}
                       </Text>
                     </View>
                   </View>
-                  <Feather name="chevron-right" size={16} color="#94a3b8" />
+                  <Feather name="chevron-right" size={18} color={IOS.chevron} />
                 </TouchableOpacity>
               </View>
 
               {/* Logout Button */}
               <TouchableOpacity
                 onPress={logout}
-                className="mt-6 bg-red-50 border border-red-100 py-3.5 rounded-2xl flex-row justify-center items-center"
+                activeOpacity={0.7}
+                style={[{ marginTop: 24, backgroundColor: IOS.white, paddingVertical: 16, borderRadius: 18, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }, cardShadow]}
               >
-                <Feather name="log-out" size={16} color="#dc2626" />
-                <Text style={{ fontSize: getFontSize(14) }} className="text-red-600 font-extrabold ml-2">
+                <Feather name="log-out" size={17} color={IOS.red} />
+                <Text style={{ fontSize: getFontSize(16), color: IOS.red, fontWeight: '600', marginLeft: 8 }}>
                   {t?.logOut || 'Log Out'}
                 </Text>
               </TouchableOpacity>
@@ -340,32 +488,21 @@ export default function Profile({ navigation }) {
 
       {/* Language Modal */}
       <Modal visible={activeModal === 'language'} transparent animationType="slide">
-        <View className="flex-1 bg-black/40 justify-end">
-          <View className="bg-white rounded-t-3xl p-6">
-            <View className="flex-row justify-between items-center mb-4">
-              <Text style={{ fontSize: getFontSize(18) }} className="font-black text-slate-900">
-                {t?.selectLanguage || 'Select Language'}
-              </Text>
-              <TouchableOpacity onPress={() => setActiveModal(null)}>
-                <Ionicons name="close-circle" size={24} color="#94a3b8" />
-              </TouchableOpacity>
-            </View>
+        <View style={sheetOverlay}>
+          <View style={sheetBody}>
+            {renderSheetHeader(t?.selectLanguage || 'Select Language')}
 
             {['English', 'Sinhala', 'Tamil'].map((lang) => (
               <TouchableOpacity
                 key={lang}
                 onPress={() => handleLanguageChange(lang)}
-                className={`py-3.5 px-4 rounded-xl border mb-2 flex-row justify-between items-center ${
-                  selectedLanguage === lang ? 'border-blue-600 bg-blue-50' : 'border-slate-100 bg-slate-50'
-                }`}
+                activeOpacity={0.7}
+                style={renderOptionStyle(selectedLanguage === lang)}
               >
-                <Text
-                  style={{ fontSize: getFontSize(14) }}
-                  className={`font-bold ${selectedLanguage === lang ? 'text-blue-600' : 'text-slate-800'}`}
-                >
+                <Text style={{ fontSize: getFontSize(16), fontWeight: selectedLanguage === lang ? '600' : '500', color: selectedLanguage === lang ? IOS.blue : IOS.label }}>
                   {lang}
                 </Text>
-                {selectedLanguage === lang && <Feather name="check" size={18} color="#0284c7" />}
+                {selectedLanguage === lang && <Feather name="check" size={19} color={IOS.blue} />}
               </TouchableOpacity>
             ))}
           </View>
@@ -374,16 +511,9 @@ export default function Profile({ navigation }) {
 
       {/* Text Size Modal */}
       <Modal visible={activeModal === 'accessibility'} transparent animationType="slide">
-        <View className="flex-1 bg-black/40 justify-end">
-          <View className="bg-white rounded-t-3xl p-6">
-            <View className="flex-row justify-between items-center mb-4">
-              <Text style={{ fontSize: getFontSize(18) }} className="font-black text-slate-900">
-                {t?.textSizeDisplay || 'Text Size'}
-              </Text>
-              <TouchableOpacity onPress={() => setActiveModal(null)}>
-                <Ionicons name="close-circle" size={24} color="#94a3b8" />
-              </TouchableOpacity>
-            </View>
+        <View style={sheetOverlay}>
+          <View style={sheetBody}>
+            {renderSheetHeader(t?.textSizeDisplay || 'Text Size')}
 
             {[
               { label: t?.smallText || 'Small', value: 'Small' },
@@ -393,17 +523,13 @@ export default function Profile({ navigation }) {
               <TouchableOpacity
                 key={item.value}
                 onPress={() => handleTextSizeChange(item.value)}
-                className={`py-3.5 px-4 rounded-xl border mb-2 flex-row justify-between items-center ${
-                  textSize === item.value ? 'border-blue-600 bg-blue-50' : 'border-slate-100 bg-slate-50'
-                }`}
+                activeOpacity={0.7}
+                style={renderOptionStyle(textSize === item.value)}
               >
-                <Text
-                  style={{ fontSize: getFontSize(14) }}
-                  className={`font-bold ${textSize === item.value ? 'text-blue-600' : 'text-slate-800'}`}
-                >
+                <Text style={{ fontSize: getFontSize(16), fontWeight: textSize === item.value ? '600' : '500', color: textSize === item.value ? IOS.blue : IOS.label }}>
                   {item.label}
                 </Text>
-                {textSize === item.value && <Feather name="check" size={18} color="#0284c7" />}
+                {textSize === item.value && <Feather name="check" size={19} color={IOS.blue} />}
               </TouchableOpacity>
             ))}
           </View>
@@ -412,38 +538,32 @@ export default function Profile({ navigation }) {
 
       {/* Notifications Modal */}
       <Modal visible={activeModal === 'notifications'} transparent animationType="slide">
-        <View className="flex-1 bg-black/40 justify-end">
-          <View className="bg-white rounded-t-3xl p-6">
-            <View className="flex-row justify-between items-center mb-4">
-              <Text style={{ fontSize: getFontSize(18) }} className="font-black text-slate-900">
-                {t?.notifications || 'Notifications'}
-              </Text>
-              <TouchableOpacity onPress={() => setActiveModal(null)}>
-                <Ionicons name="close-circle" size={24} color="#94a3b8" />
-              </TouchableOpacity>
-            </View>
+        <View style={sheetOverlay}>
+          <View style={sheetBody}>
+            {renderSheetHeader(t?.notifications || 'Notifications')}
 
-            <View className="flex-row justify-between items-center py-3 border-b border-slate-100">
-              <View className="flex-1 mr-2">
-                <Text style={{ fontSize: getFontSize(14) }} className="font-bold text-slate-800">
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14, backgroundColor: IOS.surface, borderRadius: 16, paddingHorizontal: 16 }}>
+              <View style={{ flex: 1, marginRight: 12 }}>
+                <Text style={{ fontSize: getFontSize(16), color: IOS.label, fontWeight: '500' }}>
                   {t?.queueAlerts || 'Queue Alerts'}
                 </Text>
-                <Text style={{ fontSize: getFontSize(12) }} className="text-slate-400">
+                <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, marginTop: 2 }}>
                   {t?.queueAlertsSubtitle || 'Get notified when your turn is near'}
                 </Text>
               </View>
               <Switch
                 value={notificationsEnabled}
                 onValueChange={setNotificationsEnabled}
-                trackColor={{ false: '#cbd5e1', true: '#0284c7' }}
+                trackColor={{ false: '#E5E5EA', true: IOS.green }}
               />
             </View>
 
             <TouchableOpacity
               onPress={() => setActiveModal(null)}
-              className="mt-6 bg-blue-600 py-3.5 rounded-2xl items-center"
+              activeOpacity={0.85}
+              style={{ marginTop: 20, backgroundColor: IOS.blue, paddingVertical: 15, borderRadius: 14, alignItems: 'center' }}
             >
-              <Text style={{ fontSize: getFontSize(14) }} className="text-white font-bold">
+              <Text style={{ fontSize: getFontSize(16), color: '#fff', fontWeight: '600' }}>
                 {t?.savePreferences || 'Save Preferences'}
               </Text>
             </TouchableOpacity>
@@ -453,30 +573,23 @@ export default function Profile({ navigation }) {
 
       {/* Privacy Modal */}
       <Modal visible={activeModal === 'privacy'} transparent animationType="slide">
-        <View className="flex-1 bg-black/40 justify-end">
-          <View className="bg-white rounded-t-3xl p-6">
-            <View className="flex-row justify-between items-center mb-4">
-              <Text style={{ fontSize: getFontSize(18) }} className="font-black text-slate-900">
-                {t?.privacy || 'Privacy & Security'}
-              </Text>
-              <TouchableOpacity onPress={() => setActiveModal(null)}>
-                <Ionicons name="close-circle" size={24} color="#94a3b8" />
-              </TouchableOpacity>
-            </View>
+        <View style={sheetOverlay}>
+          <View style={sheetBody}>
+            {renderSheetHeader(t?.privacy || 'Privacy & Security')}
 
-            <View className="flex-row justify-between items-center py-3 border-b border-slate-100">
-              <View className="flex-1 mr-2">
-                <Text style={{ fontSize: getFontSize(14) }} className="font-bold text-slate-800">
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14, backgroundColor: IOS.surface, borderRadius: 16, paddingHorizontal: 16 }}>
+              <View style={{ flex: 1, marginRight: 12 }}>
+                <Text style={{ fontSize: getFontSize(16), color: IOS.label, fontWeight: '500' }}>
                   {t?.biometricUnlock || 'Biometric Unlock'}
                 </Text>
-                <Text style={{ fontSize: getFontSize(12) }} className="text-slate-400">
+                <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, marginTop: 2 }}>
                   {t?.biometricSubtitle || 'Use Fingerprint / Face ID to unlock'}
                 </Text>
               </View>
               <Switch
                 value={biometricsEnabled}
                 onValueChange={setBiometricsEnabled}
-                trackColor={{ false: '#cbd5e1', true: '#0284c7' }}
+                trackColor={{ false: '#E5E5EA', true: IOS.green }}
               />
             </View>
 
@@ -485,9 +598,10 @@ export default function Profile({ navigation }) {
                 Alert.alert('PIN Updated', 'Your security PIN settings have been refreshed.');
                 setActiveModal(null);
               }}
-              className="mt-4 bg-slate-100 py-3.5 rounded-2xl items-center"
+              activeOpacity={0.7}
+              style={{ marginTop: 14, backgroundColor: IOS.fill, paddingVertical: 15, borderRadius: 14, alignItems: 'center' }}
             >
-              <Text style={{ fontSize: getFontSize(14) }} className="text-slate-800 font-bold">
+              <Text style={{ fontSize: getFontSize(16), color: IOS.blue, fontWeight: '600' }}>
                 {t?.changePin || 'Change Security PIN'}
               </Text>
             </TouchableOpacity>
