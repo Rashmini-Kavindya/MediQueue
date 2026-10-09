@@ -1,4 +1,5 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View,
   Text,
@@ -11,6 +12,7 @@ import {
   StyleSheet,
   StatusBar,
   Linking,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -22,6 +24,9 @@ const REQUEST_TIMEOUT_MS = 30000;
 
 // Sri Lanka free ambulance service number (change here if needed)
 const AMBULANCE_NUMBER = '1990';
+
+// Route name of the "Request New Token" screen. Must match the name used in your navigator (Stack.Screen name)
+const TOKEN_SCREEN = 'RequestNewToken';
 
 const COLORS = {
   primary: '#1565C0',
@@ -77,6 +82,10 @@ const T = {
     no: 'No',
     open: 'Open',
     delete: 'Delete',
+    rename: 'Rename',
+    renameTitle: 'Rename chat',
+    save: 'Save',
+    cancel: 'Cancel',
     emptyHistory: 'No chats yet. Your conversations will appear here.',
     loginNeeded: 'Please log in to save and view your chat history.',
     loading: 'Loading...',
@@ -105,6 +114,10 @@ const T = {
     no: 'නැහැ',
     open: 'විවෘත කරන්න',
     delete: 'මකන්න',
+    rename: 'නම වෙනස් කරන්න',
+    renameTitle: 'සංවාදයේ නම වෙනස් කරන්න',
+    save: 'සුරකින්න',
+    cancel: 'අවලංගු කරන්න',
     emptyHistory: 'තවමත් සංවාද නැත. ඔබේ සංවාද මෙහි දිස්වේ.',
     loginNeeded: 'සංවාද ඉතිහාසය සුරැකීමට සහ බැලීමට කරුණාකර ලොග් වන්න.',
     loading: 'පූරණය වෙමින්...',
@@ -118,6 +131,46 @@ const formatDate = (iso) => {
   } catch (e) {
     return '';
   }
+};
+
+// One id per chat session. Every message in the session shares it (like a ChatGPT thread)
+const newConversationId = () =>
+  `CONV-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+const URGENCY_ORDER = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL_EMERGENCY'];
+
+// Backend stores one ChatLog per message. Group them into conversations.
+// Old logs (no conversationId) become their own single-message conversation.
+const groupLogs = (logs) => {
+  const map = new Map();
+  (logs || []).forEach((log) => {
+    const key = log.conversationId || log.logId;
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(log);
+  });
+
+  const conversations = [];
+  map.forEach((items, key) => {
+    items.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    const last = items[items.length - 1];
+    const titled = items.find((l) => l.title);
+    const urgencyLevel = items.reduce(
+      (top, l) =>
+        URGENCY_ORDER.indexOf(l.urgencyLevel) > URGENCY_ORDER.indexOf(top) ? l.urgencyLevel : top,
+      'LOW'
+    );
+    conversations.push({
+      key,
+      title: titled ? titled.title : items[0].symptomQuery,
+      lastAt: last.createdAt,
+      urgencyLevel,
+      preview: last.aiResponse,
+      logs: items,
+    });
+  });
+
+  conversations.sort((a, b) => new Date(b.lastAt) - new Date(a.lastAt));
+  return conversations;
 };
 
 // Shared API helper: timeout + safe JSON parsing + readable errors
@@ -160,7 +213,24 @@ const request = async (path, { method = 'GET', token, body } = {}) => {
  *  - onBack(): called when the back arrow is pressed on the chat view.
  *  - navigation: React Navigation prop. If onBack is not given, the back arrow uses navigation.goBack().
  */
-export default function ChatbotScreen({ token, onSelectOpd, onBack, navigation }) {
+export default function ChatbotScreen({ token: tokenProp, onSelectOpd, onBack, navigation }) {
+  // If no token prop is passed, read the one AuthContext saved in AsyncStorage
+  const [storedToken, setStoredToken] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+    AsyncStorage.getItem('token')
+      .then((tk) => {
+        if (mounted) setStoredToken(tk);
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const token = tokenProp || storedToken;
+
   const [language, setLanguage] = useState('en');
   const [view, setView] = useState('chat'); // 'chat' | 'history'
   const [input, setInput] = useState('');
@@ -169,10 +239,18 @@ export default function ChatbotScreen({ token, onSelectOpd, onBack, navigation }
     { id: 'greeting', role: 'bot', text: GREETING.en },
   ]);
 
+  const [conversationId, setConversationId] = useState(newConversationId);
+
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState('');
   const [confirmClear, setConfirmClear] = useState(false);
+
+  // Rename
+  const [renameLog, setRenameLog] = useState(null); // log being renamed
+  const [newTitle, setNewTitle] = useState('');
+
+  const conversations = groupLogs(history);
 
   const listRef = useRef(null);
   const t = T[language];
@@ -201,6 +279,16 @@ export default function ChatbotScreen({ token, onSelectOpd, onBack, navigation }
     Linking.openURL(`tel:${AMBULANCE_NUMBER}`).catch(() => {});
   };
 
+  // "Get Token" -> Request New Token screen with this OPD pre-selected.
+  // If the parent passes onSelectOpd, that takes priority.
+  const handleGetToken = (opd) => {
+    if (onSelectOpd) {
+      onSelectOpd(opd);
+      return;
+    }
+    navigation?.navigate?.(TOKEN_SCREEN, { opdId: opd.opdId, reason: opd.reason });
+  };
+
   // ---------------------------------------------------------
   // CHAT
   // ---------------------------------------------------------
@@ -218,7 +306,7 @@ export default function ChatbotScreen({ token, onSelectOpd, onBack, navigation }
         const json = await request('/chatbot/suggest', {
           method: 'POST',
           token,
-          body: { symptom: text, language },
+          body: { symptom: text, language, conversationId },
         });
 
         const d = json.data;
@@ -234,6 +322,7 @@ export default function ChatbotScreen({ token, onSelectOpd, onBack, navigation }
                   opdId: d.suggestedOpdId,
                   opdName: d.opdName,
                   estimatedWaitMinutes: d.estimatedWaitMinutes,
+                  reason: text, // the symptom the user typed, pre-fills "Reason for Visit"
                 }
               : null,
           },
@@ -248,11 +337,16 @@ export default function ChatbotScreen({ token, onSelectOpd, onBack, navigation }
         scrollToEnd();
       }
     },
-    [input, loading, token, language]
+    [input, loading, token, language, conversationId]
   );
 
-  const newChat = () => {
+  const resetChat = () => {
     setMessages([{ id: 'greeting', role: 'bot', text: GREETING[language] }]);
+    setConversationId(newConversationId());
+  };
+
+  const newChat = () => {
+    resetChat();
     setView('chat');
   };
 
@@ -279,25 +373,31 @@ export default function ChatbotScreen({ token, onSelectOpd, onBack, navigation }
     loadHistory();
   };
 
-  const openLog = (log) => {
-    setMessages([
-      { id: `h-u-${log.logId}`, role: 'user', text: log.symptomQuery },
-      {
+  // Load the whole conversation into the chat view. New messages continue the same conversation.
+  const openConversation = (conv) => {
+    const msgs = [];
+    conv.logs.forEach((log) => {
+      msgs.push({ id: `h-u-${log.logId}`, role: 'user', text: log.symptomQuery });
+      msgs.push({
         id: `h-b-${log.logId}`,
         role: 'bot',
         text: log.aiResponse,
         urgencyLevel: log.urgencyLevel,
         opd: null,
-      },
-    ]);
+      });
+    });
+    setMessages(msgs);
+    setConversationId(conv.key);
     setView('chat');
+    scrollToEnd();
   };
 
-  const deleteLog = async (logId) => {
+  const deleteConversation = async (key) => {
     setHistoryError('');
     try {
-      await request(`/chatbot/history/${logId}`, { method: 'DELETE', token });
-      setHistory((prev) => prev.filter((l) => l.logId !== logId));
+      await request(`/chatbot/history/${encodeURIComponent(key)}`, { method: 'DELETE', token });
+      setHistory((prev) => prev.filter((l) => (l.conversationId || l.logId) !== key));
+      if (key === conversationId) resetChat();
     } catch (err) {
       setHistoryError(errorText(err));
     }
@@ -308,10 +408,35 @@ export default function ChatbotScreen({ token, onSelectOpd, onBack, navigation }
     try {
       await request('/chatbot/history', { method: 'DELETE', token });
       setHistory([]);
+      resetChat();
     } catch (err) {
       setHistoryError(errorText(err));
     } finally {
       setConfirmClear(false);
+    }
+  };
+
+  const startRename = (conv) => {
+    setRenameLog(conv);
+    setNewTitle(conv.title || '');
+  };
+
+  const saveRename = async () => {
+    const title = newTitle.trim();
+    if (!title || !renameLog) return;
+    setHistoryError('');
+    try {
+      await request(`/chatbot/history/${encodeURIComponent(renameLog.key)}`, {
+        method: 'PATCH',
+        token,
+        body: { title },
+      });
+      setHistory((prev) =>
+        prev.map((l) => ((l.conversationId || l.logId) === renameLog.key ? { ...l, title } : l))
+      );
+      setRenameLog(null);
+    } catch (err) {
+      setHistoryError(errorText(err));
     }
   };
 
@@ -389,7 +514,7 @@ export default function ChatbotScreen({ token, onSelectOpd, onBack, navigation }
               <TouchableOpacity
                 style={styles.opdButton}
                 activeOpacity={0.85}
-                onPress={() => onSelectOpd && onSelectOpd(item.opd)}
+                onPress={() => handleGetToken(item.opd)}
               >
                 <Text style={styles.opdButtonText}>{t.getToken}</Text>
               </TouchableOpacity>
@@ -408,7 +533,7 @@ export default function ChatbotScreen({ token, onSelectOpd, onBack, navigation }
       <TouchableOpacity
         style={[styles.logCard, isEmergency && styles.logCardEmergency]}
         activeOpacity={0.85}
-        onPress={() => openLog(item)}
+        onPress={() => openConversation(item)}
       >
         <View style={styles.logTop}>
           <View style={[styles.badge, { backgroundColor: urgency.bg, marginBottom: 0 }]}>
@@ -416,19 +541,22 @@ export default function ChatbotScreen({ token, onSelectOpd, onBack, navigation }
               {urgency.label.toUpperCase()}
             </Text>
           </View>
-          <Text style={styles.logDate}>{formatDate(item.createdAt)}</Text>
+          <Text style={styles.logDate}>{formatDate(item.lastAt)}</Text>
         </View>
         <Text style={styles.logQuery} numberOfLines={2}>
-          {item.symptomQuery}
+          {item.title}
         </Text>
         <Text style={styles.logResponse} numberOfLines={3}>
-          {item.aiResponse}
+          {item.preview}
         </Text>
         <View style={styles.logActions}>
-          <TouchableOpacity onPress={() => openLog(item)} hitSlop={8}>
+          <TouchableOpacity onPress={() => openConversation(item)} hitSlop={8}>
             <Text style={styles.logOpen}>{t.open}</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => deleteLog(item.logId)} hitSlop={8}>
+          <TouchableOpacity onPress={() => startRename(item)} hitSlop={8}>
+            <Text style={styles.logOpen}>{t.rename}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => deleteConversation(item.key)} hitSlop={8}>
             <Text style={styles.logDelete}>{t.delete}</Text>
           </TouchableOpacity>
         </View>
@@ -482,8 +610,8 @@ export default function ChatbotScreen({ token, onSelectOpd, onBack, navigation }
             </View>
           )}
           <FlatList
-            data={history}
-            keyExtractor={(l) => l.logId}
+            data={conversations}
+            keyExtractor={(c) => c.key}
             renderItem={renderLog}
             contentContainerStyle={[styles.list, history.length === 0 && { justifyContent: 'center' }]}
             ListEmptyComponent={
@@ -496,6 +624,35 @@ export default function ChatbotScreen({ token, onSelectOpd, onBack, navigation }
           />
         </>
       )}
+
+      {/* Rename modal */}
+      <Modal
+        visible={!!renameLog}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setRenameLog(null)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>{t.renameTitle}</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={newTitle}
+              onChangeText={setNewTitle}
+              maxLength={80}
+              autoFocus
+            />
+            <View style={styles.logActions}>
+              <TouchableOpacity onPress={() => setRenameLog(null)} hitSlop={8}>
+                <Text style={[styles.logOpen, { color: COLORS.muted }]}>{t.cancel}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={saveRename} hitSlop={8}>
+                <Text style={[styles.logOpen, { marginRight: 0 }]}>{t.save}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 
@@ -867,4 +1024,23 @@ const styles = StyleSheet.create({
   },
   errorText: { color: COLORS.dangerDark, fontSize: 13, flex: 1, marginRight: 10 },
   errorRetry: { color: COLORS.danger, fontWeight: '700', fontSize: 13 },
+
+  // Rename modal
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  modalCard: { backgroundColor: COLORS.white, borderRadius: 14, padding: 16 },
+  modalTitle: { fontSize: 16, fontWeight: '700', color: COLORS.text, marginBottom: 10 },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 15,
+    color: COLORS.text,
+  },
 });

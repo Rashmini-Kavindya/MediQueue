@@ -2,10 +2,8 @@ const Token = require('../models/Token');
 const OPD = require('../models/OPD');
 const CaregiverLink = require('../models/CaregiverLink');
 const User = require('../models/User');
-const Notification = require('../models/Notification');
-const NotificationLog = require('../models/NotificationLog');
 const { generateId } = require('../utils/id');
-const { sendSms } = require('../utils/sendSms'); // Notify.lk helper (axios වෙනුවට)
+const { notifyTokenBooked } = require('../services/notificationService');
 
 // 1. BOOK A TOKEN
 exports.bookToken = async (req, res) => {
@@ -106,57 +104,15 @@ exports.bookToken = async (req, res) => {
 
     await newToken.save();
 
-    // --- 🔔 AUTO NOTIFICATION & SMS CREATION ON BOOKING ---
-    try {
-      const sampleNotificationId = generateId('NOTIF');
-      const startTime = Date.now();
-      const alertMessage = `You have successfully joined the queue. Your token number is ${newToken.tokenNo}.`;
-
-      // 1. දුරකථන අංකය නිවැරදිව ලබා ගැනීම (Patient ID එක මඟින් හෝ Logged-in User ගෙන්)
-      let targetUser = await User.findOne({ patientId: patientId });
-      if (!targetUser) {
-        targetUser = await User.findOne({ userId: userId });
-      }
-
-      const userPhone = targetUser ? targetUser.phone : null;
-
-      // 2. In-app Notification එක Save කිරීම (Frontend එකට catch වීමට 'QUEUE_UPDATE' සහ 'room' එකතු කරන ලදී)
-      const newNotification = new Notification({
-        notificationId: sampleNotificationId,
-        tokenId: newToken.tokenId,
-        userId: userId,
-        title: 'Token Booked Successfully',
-        message: alertMessage,
-        type: 'QUEUE_UPDATE', 
-        room: newToken.roomId,
-        channel: 'SMS',
-        isRead: false,
-        sentAt: new Date()
-      });
-      await newNotification.save();
-
-      // 3. SMS එක යැවීම (Notify.lk - sendSms helper එක හරහා)
-      if (userPhone) {
-        try {
-          await sendSms(userPhone, `MediQueue: ${alertMessage}`);
-          console.log(`SMS successfully sent to ${userPhone}`);
-        } catch (smsErr) {
-          console.error('SMS Gateway Error:', smsErr.message);
-        }
-      }
-
-      // 4. Notification Log එක Save කිරීම
-      await NotificationLog.create({
-        notificationId: sampleNotificationId,
-        userId: userId,
-        channel: 'SMS',
-        status: 'delivered',
-        latencyMs: Date.now() - startTime + 10,
-        sentAt: new Date()
-      });
-    } catch (notifErr) {
-      console.error('Notification or SMS creation failed:', notifErr.message);
-    }
+    // --- 🔔 BOOKING NOTIFICATION ---
+    // In-app notification always; SMS only if the user enabled SMS in alert preferences.
+    // Runs in the background so a notification problem never fails the booking.
+    notifyTokenBooked({
+      userId,
+      tokenId: newToken.tokenId,
+      tokenNo: newToken.tokenNo,
+      opdName: opd.name
+    }).catch((err) => console.error('Booking notification failed:', err.message));
     // ----------------------------------------------
 
     res.status(201).json({

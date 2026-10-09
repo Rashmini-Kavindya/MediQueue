@@ -67,6 +67,9 @@ app.use('/api/notification-logs', require('./routes/notificationLogRoutes'));
 app.use('/api/alert-preferences', require('./routes/alertPreferenceRoutes'));
 app.use('/api/templates', require('./routes/templateRoutes'));
 
+app.use('/api/admin/tokens', require('./routes/adminTokenRoutes'));
+
+
 app.get('/', (req, res) => {
   res.send('MediQueue Server Running...');
 });

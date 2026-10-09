@@ -13,6 +13,7 @@ import DoctorManagement from '../screens/staff/DoctorManagement';
 import AdminNotifications from '../screens/staff/AdminNotifications';
 import WaitingAreaManagement from '../screens/staff/WaitingAreaManagement';
 import UserManagement from '../screens/staff/UserManagement';
+import TokenManagement from '../screens/staff/TokenManage';
 
 const Drawer = createDrawerNavigator();
 
@@ -33,6 +34,7 @@ export default function AdminNavigator() {
       <Drawer.Screen name="Notifications" component={AdminNotifications} />
       <Drawer.Screen name="WaitingAreaManagement" component={WaitingAreaManagement} />
       <Drawer.Screen name="UserManagement" component={UserManagement} />
+      <Drawer.Screen name="TokenManagement" component={TokenManagement} />
       {/* Existing future screens retained as reference:
       <Drawer.Screen name="OPDManagement" component={OPDManagement} />
       <Drawer.Screen name="DoctorsManagement" component={DoctorsManagement} />
