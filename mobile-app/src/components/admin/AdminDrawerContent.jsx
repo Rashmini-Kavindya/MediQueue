@@ -118,7 +118,8 @@ export default function AdminDrawerContent(props) {
       {isAdmin && <DrawerItem label="Users" icon="person-outline" routeName="UserManagement" />}
       <SectionHeader title="COMMUNICATION" />
       <DrawerItem label="Notifications" icon="notifications-outline" routeName="Notifications" />
-      <DrawerItem label="Announcements" icon="megaphone-outline" routeName="Announcements" />
+
+      {/* SYSTEM */}
       <SectionHeader title="SYSTEM" />
       <DrawerItem label="Settings" icon="settings-outline" routeName="SystemSettings" />
       <TouchableOpacity activeOpacity={0.8} onPress={handleLogout}

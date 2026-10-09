@@ -1,39 +1,22 @@
 const mongoose = require('mongoose');
 
 const notificationSchema = new mongoose.Schema({
-  notificationId: {
-    type: String,
-    required: true,
-    unique: true
-  },
+  notificationId: { type: String, required: true, unique: true },
+  userId: { type: String, required: true },
 
-  userId: {
-    type: String,
-    required: true
-  },
+  // Admin manual notifications have no token, so this is optional now
+  tokenId: { type: String, default: '' },
 
-  tokenId: {
-    type: String,
-    required: true
-  },
-
-  title: {                  
-    type: String
-  },
-  room: {                   
-    type: String
-  },
+  title: { type: String },
+  room: { type: String },
 
   type: {
     type: String,
-    enum: ['near', 'called', 'update', 'QUEUE_UPDATE', 'YOUR_TURN', 'TURN_NEAR'],
+    enum: ['booked', 'near', 'called', 'update', 'QUEUE_UPDATE', 'YOUR_TURN', 'TURN_NEAR'],
     required: true
   },
 
-  message: {
-    type: String,
-    required: true
-  },
+  message: { type: String, required: true },
 
   channel: {
     type: String,
@@ -42,18 +25,17 @@ const notificationSchema = new mongoose.Schema({
     default: 'app'
   },
 
-  isRead: {
-    type: Boolean,
-    default: false
-  },
+  // Set when an admin sends one message to a group (a role or everyone).
+  // Every recipient still gets their own copy; the admin list groups them by this id.
+  broadcastId: { type: String, index: true },
+  audience: { type: String }, // 'all' | 'role:<role>' | 'user'
 
-  sentAt: {
-    type: Date,
-    default: Date.now
-  }
-}, {
-  timestamps: true
-});
+  // system = auto generated (queue events), admin = created manually from admin panel
+  source: { type: String, enum: ['system', 'admin'], default: 'system' },
+
+  isRead: { type: Boolean, default: false },
+  sentAt: { type: Date, default: Date.now }
+}, { timestamps: true });
 
 notificationSchema.index({ userId: 1, sentAt: -1 });
 notificationSchema.index({ tokenId: 1 });

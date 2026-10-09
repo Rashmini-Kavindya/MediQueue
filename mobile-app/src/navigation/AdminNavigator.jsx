@@ -1,8 +1,16 @@
 import React from 'react';
 import { createDrawerNavigator } from '@react-navigation/drawer';
+
+// Custom Sidebar Component
 import AdminDrawerContent from '../components/admin/AdminDrawerContent';
+
+// Admin / Staff Screens
 import AdminDashboard from '../screens/staff/AdminDashboard';
 import QueueManagement from '../screens/staff/QueueManagement';
+import OPDManagement from '../screens/staff/OPDManagement';
+import RoomManagement from '../screens/staff/RoomManagement';
+import DoctorManagement from '../screens/staff/DoctorManagement';
+import AdminNotifications from '../screens/staff/AdminNotifications';
 import WaitingAreaManagement from '../screens/staff/WaitingAreaManagement';
 import UserManagement from '../screens/staff/UserManagement';
 
@@ -19,6 +27,10 @@ export default function AdminNavigator() {
     >
       <Drawer.Screen name="AdminDashboard" component={AdminDashboard} />
       <Drawer.Screen name="QueueManagement" component={QueueManagement} />
+      <Drawer.Screen name="OPDManagement" component={OPDManagement} />
+      <Drawer.Screen name="DoctorsManagement" component={DoctorManagement} />
+      <Drawer.Screen name="RoomsManagement" component={RoomManagement} />
+      <Drawer.Screen name="Notifications" component={AdminNotifications} />
       <Drawer.Screen name="WaitingAreaManagement" component={WaitingAreaManagement} />
       <Drawer.Screen name="UserManagement" component={UserManagement} />
       {/* Existing future screens retained as reference:
