@@ -89,8 +89,8 @@ const AppHeader = ({
         >
           <MaterialCommunityIcons
             name="bell-outline"
-            size={27}
-            color="#1E40AF"
+            size={24}
+            color="#007AFF"
           />
 
           {/* Notification Indicator */}
@@ -107,8 +107,8 @@ const AppHeader = ({
         >
           <MaterialCommunityIcons
             name="file-document-outline"
-            size={26}
-            color="#334155"
+            size={23}
+            color="#3A3A3C"
           />
         </TouchableOpacity>
 
@@ -165,7 +165,7 @@ const AppHeader = ({
                   navigation?.navigate('Profile');
                 }}
               >
-                <Feather name="user" size={18} color="#2563EB" />
+                <Feather name="user" size={18} color="#007AFF" />
                 <Text style={styles.dropdownItemText}>My Profile</Text>
               </TouchableOpacity>
 
@@ -174,7 +174,7 @@ const AppHeader = ({
                 style={[styles.dropdownItem, styles.logoutItem]}
                 onPress={handleLogoutPress}
               >
-                <Feather name="log-out" size={18} color="#DC2626" />
+                <Feather name="log-out" size={18} color="#FF3B30" />
                 <Text style={[styles.dropdownItemText, styles.logoutText]}>
                   Log Out
                 </Text>
@@ -193,20 +193,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 18,
-    paddingTop: Platform.OS === 'ios' ? 18 : 16,
-    paddingBottom: 17,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E8EEF8',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(60, 60, 67, 0.18)',
     ...Platform.select({
       ios: {
-        shadowColor: '#1E3A8A',
+        shadowColor: '#0B1B3A',
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.07,
-        shadowRadius: 8,
+        shadowOpacity: 0.05,
+        shadowRadius: 12,
       },
       android: {
-        elevation: 4,
+        elevation: 3,
       },
     }),
     zIndex: 1000,
@@ -217,38 +217,50 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   logoContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 15,
-    backgroundColor: '#EFF6FF',
+    width: 44,
+    height: 44,
+    borderRadius: 13,
+    borderCurve: 'continuous', // iOS squircle (අනිත් platform වල ignore වෙනවා)
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 11,
-    borderWidth: 1,
-    borderColor: '#DBEAFE',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(60, 60, 67, 0.18)',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#007AFF',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.16,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   logo: {
-    width: 39,
-    height: 39,
+    width: 30,
+    height: 30,
   },
   brandContainer: {
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: '#0F172A',
-    letterSpacing: 0.3,
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#0B1220',
+    letterSpacing: -0.4,
   },
   titleHighlight: {
-    color: '#2563EB',
+    color: '#007AFF',
   },
   headerSubtitle: {
     fontSize: 9,
-    fontWeight: '700',
-    color: '#64748B',
-    letterSpacing: 2,
-    marginTop: 3,
+    fontWeight: '600',
+    color: '#8E8E93',
+    letterSpacing: 1.8,
+    marginTop: 1,
   },
   rightSection: {
     flexDirection: 'row',
@@ -256,44 +268,44 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   iconButton: {
-    width: 43,
-    height: 43,
-    borderRadius: 14,
-    backgroundColor: '#F1F5F9',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(118, 118, 128, 0.12)', // iOS tertiary fill
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 7,
+    marginLeft: 8,
     position: 'relative',
   },
   notificationDot: {
     position: 'absolute',
-    top: 8,
-    right: 9,
-    width: 9,
-    height: 9,
+    top: 7,
+    right: 8,
+    width: 10,
+    height: 10,
     borderRadius: 5,
-    backgroundColor: '#EF4444',
+    backgroundColor: '#FF3B30',
     borderWidth: 1.5,
-    borderColor: '#F1F5F9',
+    borderColor: '#FFFFFF',
   },
   profileButton: {
     marginLeft: 10,
   },
   profileAvatar: {
-    width: 43,
-    height: 43,
-    borderRadius: 15,
-    backgroundColor: '#2563EB',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#007AFF',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#DBEAFE',
+    borderColor: '#FFFFFF',
     ...Platform.select({
       ios: {
-        shadowColor: '#2563EB',
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.2,
-        shadowRadius: 5,
+        shadowColor: '#007AFF',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.35,
+        shadowRadius: 6,
       },
       android: {
         elevation: 3,
@@ -301,30 +313,31 @@ const styles = StyleSheet.create({
     }),
   },
   avatarText: {
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: 16,
+    fontWeight: '700',
     color: '#FFFFFF',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    backgroundColor: 'rgba(0, 0, 0, 0.18)',
     justifyContent: 'flex-start',
     alignItems: 'flex-end',
-    paddingTop: Platform.OS === 'ios' ? 70 : 60,
-    paddingRight: 18,
+    paddingTop: Platform.OS === 'ios' ? 100 : 70,
+    paddingRight: 16,
   },
   dropdownContainer: {
-    width: 220,
+    width: 236,
     backgroundColor: '#FFFFFF',
     borderRadius: 18,
-    paddingVertical: 8,
+    borderCurve: 'continuous',
+    paddingVertical: 6,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 8,
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.16,
+    shadowRadius: 20,
+    elevation: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(60, 60, 67, 0.18)',
   },
   dropdownHeader: {
     flexDirection: 'row',
@@ -333,56 +346,59 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   dropdownAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    backgroundColor: '#2563EB',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#007AFF',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
   },
   dropdownAvatarText: {
     fontSize: 15,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#FFFFFF',
   },
   dropdownUserInfo: {
     flex: 1,
   },
   dropdownUserName: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#0F172A',
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#0B1220',
+    letterSpacing: -0.2,
   },
   dropdownUserRole: {
-    fontSize: 11,
-    color: '#64748B',
+    fontSize: 12,
+    color: '#8E8E93',
     marginTop: 1,
   },
   dropdownDivider: {
-    height: 1,
-    backgroundColor: '#F1F5F9',
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: 'rgba(60, 60, 67, 0.18)',
     marginVertical: 4,
+    marginHorizontal: 14,
   },
   dropdownItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 11,
+    paddingVertical: 12,
   },
   dropdownItemText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#334155',
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#1C1C1E',
     marginLeft: 12,
+    letterSpacing: -0.2,
   },
   logoutItem: {
-    borderTopWidth: 1,
-    borderTopColor: '#F8FAFC',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(60, 60, 67, 0.18)',
     marginTop: 2,
   },
   logoutText: {
-    color: '#DC2626',
+    color: '#FF3B30',
   },
 });
 
