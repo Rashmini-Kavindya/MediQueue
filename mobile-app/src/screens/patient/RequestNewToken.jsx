@@ -39,19 +39,40 @@ const cardShadow = {
   elevation: 2,
 };
 
-export default function RequestNewToken({ navigation }) {
+// Optional route params (sent from the chatbot "Get Token" button):
+//   opdId  - OPD to pre-select
+//   reason - text to pre-fill "Reason for Visit"
+export default function RequestNewToken({ navigation, route }) {
   const { user } = useContext(AuthContext);
   const { getFontSize } = useSettings();
 
+  const presetOpdId = route?.params?.opdId;
+  const presetReason = route?.params?.reason;
+
   const [clinics, setClinics] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [reason, setReason] = useState('');
+  const [reason, setReason] = useState(presetReason || '');
   const [profile, setProfile] = useState(null);
 
   useEffect(() => {
     fetchOpds();
     fetchProfile();
   }, []);
+
+  // Screen already mounted and opened again from the chatbot with new params -> re-apply them
+  useEffect(() => {
+    if (presetOpdId) {
+      setClinics((prev) =>
+        prev.some((c) => c.id === presetOpdId)
+          ? prev.map((c) => ({ ...c, selected: c.id === presetOpdId }))
+          : prev
+      );
+    }
+  }, [presetOpdId]);
+
+  useEffect(() => {
+    if (presetReason) setReason(presetReason);
+  }, [presetReason]);
 
   // Patientගේ real data ලබා ගැනීම
   const fetchProfile = async () => {
@@ -70,13 +91,18 @@ export default function RequestNewToken({ navigation }) {
       setLoading(true);
       const response = await API.get('/opds');
       if (response.data.success) {
-        const formattedClinics = response.data.data.map((opd, index) => ({
+        const list = response.data.data;
+        // Pre-select the OPD suggested by the chatbot (if it exists in the list)
+        const hasPreset = Boolean(presetOpdId) && list.some((o) => o.opdId === presetOpdId);
+        const defaultIndex = list.length > 1 ? 1 : 0;
+
+        const formattedClinics = list.map((opd, index) => ({
           id: opd.opdId,
           name: opd.name,
           room: opd.roomId || 'Room 01',
           floor: opd.department || 'Floor 01',
           wait: `~${opd.avgConsultMinutes || 15} min`,
-          selected: index === 1,
+          selected: hasPreset ? opd.opdId === presetOpdId : index === defaultIndex,
         }));
         setClinics(formattedClinics);
       }

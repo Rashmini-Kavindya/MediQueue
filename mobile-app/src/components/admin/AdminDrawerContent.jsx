@@ -108,13 +108,13 @@ export default function AdminDrawerContent(props) {
       <DrawerItem label="Dashboard" icon="grid-outline" routeName="AdminDashboard" />
       <DrawerItem label="Queue Management" icon="ticket-outline" routeName="QueueManagement" />
       <SectionHeader title="HOSPITAL" />
+      <DrawerItem label="Token Management" icon="business-outline" routeName="TokenManagement" />
       <DrawerItem label="OPDs" icon="business-outline" routeName="OPDManagement" />
       <DrawerItem label="Doctors" icon="stethoscope" iconType="material" routeName="DoctorsManagement" />
       <DrawerItem label="Rooms" icon="door-open" iconType="material" routeName="RoomsManagement" />
       <DrawerItem label="Consultations" icon="clipboard-outline" routeName="Consultations" />
       {isAdmin && <DrawerItem label="Waiting Areas" icon="cafe-outline" routeName="WaitingAreaManagement" />}
       <SectionHeader title="PEOPLE" />
-      <DrawerItem label="Patients" icon="people-outline" routeName="PatientsManagement" />
       {isAdmin && <DrawerItem label="Users" icon="person-outline" routeName="UserManagement" />}
       <SectionHeader title="COMMUNICATION" />
       <DrawerItem label="Notifications" icon="notifications-outline" routeName="Notifications" />
