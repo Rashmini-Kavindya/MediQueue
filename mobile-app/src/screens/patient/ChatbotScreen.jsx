@@ -158,8 +158,9 @@ const request = async (path, { method = 'GET', token, body } = {}) => {
  *  - onSelectOpd(opd): called when user taps "Get Token" on a suggested OPD.
  *      opd = { opdId, opdName, estimatedWaitMinutes }
  *  - onBack(): called when the back arrow is pressed on the chat view.
+ *  - navigation: React Navigation prop. If onBack is not given, the back arrow uses navigation.goBack().
  */
-export default function ChatbotScreen({ token, onSelectOpd, onBack }) {
+export default function ChatbotScreen({ token, onSelectOpd, onBack, navigation }) {
   const [language, setLanguage] = useState('en');
   const [view, setView] = useState('chat'); // 'chat' | 'history'
   const [input, setInput] = useState('');
@@ -319,6 +320,8 @@ export default function ChatbotScreen({ token, onSelectOpd, onBack }) {
       setView('chat');
     } else if (onBack) {
       onBack();
+    } else if (navigation?.canGoBack?.()) {
+      navigation.goBack();
     }
   };
 
@@ -570,7 +573,7 @@ export default function ChatbotScreen({ token, onSelectOpd, onBack }) {
 
       {/* Header */}
       <View style={styles.header}>
-        {onBack || view === 'history' ? (
+        {onBack || navigation || view === 'history' ? (
           <TouchableOpacity onPress={handleBack} style={styles.backBtn} hitSlop={10}>
             <Text style={styles.backText}>{'‹'}</Text>
           </TouchableOpacity>
