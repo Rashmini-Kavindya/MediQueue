@@ -6,6 +6,52 @@ import { AuthContext } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import API from '../../services/api';
 
+// iOS system colors - blue as accent, soft grouped background + white cards
+const IOS = {
+  blue: '#007AFF',
+  blueSoft: 'rgba(0,122,255,0.10)',
+  green: '#34C759',
+  greenDark: '#248A3D',
+  greenSoft: 'rgba(52,199,89,0.14)',
+  orange: '#FF9500',
+  orangeSoft: 'rgba(255,149,0,0.14)',
+  red: '#FF3B30',
+  redSoft: 'rgba(255,59,48,0.10)',
+  label: '#1C1C1E',
+  secondaryLabel: '#636366',
+  tertiaryLabel: '#8E8E93',
+  chevron: '#C7C7CC',
+  fill: '#EFEFF4',
+  surface: '#F7F7FA',
+  separator: '#E9E9EE',
+  groupedBg: '#F4F5F9',
+  white: '#FFFFFF',
+};
+
+// iOS style soft shadow for cards
+const cardShadow = {
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.05,
+  shadowRadius: 10,
+  elevation: 2,
+};
+
+// Full screen dimmed overlay used by the success / error popups
+const overlayStyle = {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: 'rgba(0,0,0,0.4)',
+  justifyContent: 'center',
+  alignItems: 'center',
+  paddingHorizontal: 20,
+  zIndex: 50,
+  elevation: 50,
+};
+
 export default function ConfirmNewToken({ route, navigation }) {
   const { user } = useContext(AuthContext);
   const { getFontSize } = useSettings();
@@ -70,82 +116,87 @@ export default function ConfirmNewToken({ route, navigation }) {
     }
   };
 
+  // Small reusable detail row (label left, value right)
+  const detailLabelStyle = { fontSize: getFontSize(14), color: IOS.tertiaryLabel, fontWeight: '500' };
+
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-slate-50 relative">
+    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: IOS.groupedBg }}>
       {/* Top Header */}
-      <View className="flex-row justify-between items-center px-4 pt-3 pb-3 bg-white border-b border-slate-100">
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 14, paddingTop: 8, paddingBottom: 12 }}>
         <TouchableOpacity 
           onPress={() => navigation.goBack()}
-          className="flex-row items-center"
+          activeOpacity={0.6}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          style={{ flexDirection: 'row', alignItems: 'center', width: 80 }}
         >
-          <Ionicons name="chevron-back" size={20} color="#2563eb" />
-          <Text style={{ fontSize: getFontSize(14) }} className="font-bold text-blue-600 ml-1">
+          <Ionicons name="chevron-back" size={24} color={IOS.blue} />
+          <Text style={{ fontSize: getFontSize(17), color: IOS.blue, fontWeight: '500' }}>
             Back
           </Text>
         </TouchableOpacity>
 
-        <Text style={{ fontSize: getFontSize(16) }} className="font-black text-slate-900 tracking-tight">
+        <Text style={{ fontSize: getFontSize(17), color: IOS.label, fontWeight: '600' }}>
           Confirm New Token
         </Text>
 
-        <View className="w-9 h-9" />
+        <View style={{ width: 80 }} />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 30 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 40 }}
+      >
         
         {/* New Clinic Request Card */}
-        <View className="bg-white border border-slate-200/80 rounded-2xl p-4 mb-4 shadow-sm">
-          <View className="flex-row justify-between items-center mb-4 pb-3 border-b border-slate-100">
-            <View className="flex-row items-center">
-              <View className="w-2 h-2 rounded-full bg-blue-600 mr-2" />
-              <Text style={{ fontSize: getFontSize(11) }} className="font-extrabold text-slate-800 tracking-wider">
-                NEW CLINIC REQUEST
-              </Text>
-            </View>
-            <View className="bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-full">
-              <Text style={{ fontSize: getFontSize(10) }} className="font-bold text-blue-600">
+        <View style={[{ backgroundColor: IOS.white, borderRadius: 24, padding: 18, marginBottom: 20 }, cardShadow]}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: IOS.separator }}>
+            <Text style={{ fontSize: getFontSize(17), color: IOS.label, fontWeight: '700' }}>
+              New clinic request
+            </Text>
+            <View style={{ backgroundColor: IOS.blueSoft, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 }}>
+              <Text style={{ fontSize: getFontSize(11), color: IOS.blue, fontWeight: '600' }}>
                 Additional Token
               </Text>
             </View>
           </View>
 
           {/* Department */}
-          <View className="flex-row justify-between items-center mb-3">
-            <Text style={{ fontSize: getFontSize(12) }} className="font-bold text-slate-400 uppercase">Department:</Text>
-            <View className="items-end">
-              <Text style={{ fontSize: getFontSize(14) }} className="font-black text-slate-900">{selectedClinic.name}</Text>
-              <Text style={{ fontSize: getFontSize(11) }} className="text-slate-400">{selectedClinic.room} • {selectedClinic.floor}</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <Text style={detailLabelStyle}>Department</Text>
+            <View style={{ alignItems: 'flex-end', flex: 1, marginLeft: 12 }}>
+              <Text numberOfLines={1} style={{ fontSize: getFontSize(16), color: IOS.label, fontWeight: '600' }}>{selectedClinic.name}</Text>
+              <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, marginTop: 2 }}>{selectedClinic.room} • {selectedClinic.floor}</Text>
             </View>
           </View>
 
           {/* Patient */}
-          <View className="flex-row justify-between items-center mb-4">
-            <Text style={{ fontSize: getFontSize(12) }} className="font-bold text-slate-400 uppercase">Patient:</Text>
-            <Text style={{ fontSize: getFontSize(13) }} className="font-bold text-slate-900">
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <Text style={detailLabelStyle}>Patient</Text>
+            <Text style={{ fontSize: getFontSize(15), color: IOS.label, fontWeight: '600' }}>
               {user?.name || 'Rashmini Silva'}
             </Text>
           </View>
 
           {/* Projected Wait */}
-          <View className="flex-row justify-between items-center mb-4 pb-4 border-b border-slate-100">
-            <Text style={{ fontSize: getFontSize(12) }} className="font-bold text-slate-400 uppercase">Projected Wait:</Text>
-            <View className="bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full flex-row items-center">
-              <Ionicons name="time-outline" size={13} color="#059669" style={{ marginRight: 4 }} />
-              <Text style={{ fontSize: getFontSize(11) }} className="font-bold text-emerald-700">
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+            <Text style={detailLabelStyle}>Projected wait</Text>
+            <View style={{ backgroundColor: IOS.greenSoft, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="time-outline" size={14} color={IOS.greenDark} style={{ marginRight: 4 }} />
+              <Text style={{ fontSize: getFontSize(12), color: IOS.greenDark, fontWeight: '600' }}>
                 {selectedClinic.wait}
               </Text>
             </View>
           </View>
 
           {/* Estimated Token Box */}
-          <View className="bg-blue-50/60 border border-blue-100 rounded-2xl p-4 items-center">
-            <Text style={{ fontSize: getFontSize(11) }} className="font-extrabold text-blue-600 tracking-wider uppercase mb-1">
-              Estimated Status
+          <View style={{ backgroundColor: IOS.surface, borderRadius: 18, paddingVertical: 20, paddingHorizontal: 16, alignItems: 'center' }}>
+            <Text style={{ fontSize: getFontSize(13), color: IOS.tertiaryLabel, fontWeight: '500' }}>
+              Estimated status
             </Text>
-            <Text style={{ fontSize: getFontSize(22) }} className="font-black text-slate-900 tracking-tight my-1">
+            <Text style={{ fontSize: getFontSize(26), color: IOS.label, fontWeight: '700', letterSpacing: 0.3, marginVertical: 4 }}>
               Ready to Issue
             </Text>
-            <Text style={{ fontSize: getFontSize(10) }} className="text-slate-400 text-center">
+            <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, textAlign: 'center', lineHeight: 17 }}>
               Final token number and queue position will be assigned upon confirmation
             </Text>
           </View>
@@ -154,15 +205,23 @@ export default function ConfirmNewToken({ route, navigation }) {
         {/* Checkbox Agreement */}
         <TouchableOpacity 
           onPress={() => setIsChecked(!isChecked)}
-          activeOpacity={0.9}
-          className="flex-row items-center mb-5 px-1"
+          activeOpacity={0.8}
+          style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24, paddingHorizontal: 4 }}
         >
-          <View className={`w-5 h-5 rounded-md border items-center justify-center mr-2.5 ${
-            isChecked ? 'bg-blue-600 border-blue-600' : 'border-slate-300 bg-white'
-          }`}>
-            {isChecked && <Ionicons name="checkmark" size={14} color="#ffffff" />}
+          <View style={{
+            width: 24,
+            height: 24,
+            borderRadius: 12,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginRight: 12,
+            borderWidth: isChecked ? 0 : 1.5,
+            borderColor: IOS.chevron,
+            backgroundColor: isChecked ? IOS.blue : IOS.white,
+          }}>
+            {isChecked && <Ionicons name="checkmark" size={15} color="#ffffff" />}
           </View>
-          <Text style={{ fontSize: getFontSize(12) }} className="font-medium text-slate-700 flex-1">
+          <Text style={{ fontSize: getFontSize(14), color: IOS.secondaryLabel, fontWeight: '500', flex: 1, lineHeight: 20 }}>
             I confirm I wish to request this additional OPD token.
           </Text>
         </TouchableOpacity>
@@ -171,15 +230,23 @@ export default function ConfirmNewToken({ route, navigation }) {
         <TouchableOpacity
           onPress={handleConfirmToken}
           disabled={!isChecked || loading}
-          className={`py-4 rounded-2xl items-center justify-center shadow-md flex-row mb-3 ${
-            isChecked ? 'bg-blue-600' : 'bg-blue-300'
-          }`}
+          activeOpacity={0.85}
+          style={{
+            backgroundColor: IOS.blue,
+            paddingVertical: 16,
+            borderRadius: 16,
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexDirection: 'row',
+            marginBottom: 10,
+            opacity: isChecked ? 1 : 0.4,
+          }}
         >
           {loading ? (
             <ActivityIndicator size="small" color="#ffffff" />
           ) : (
             <>
-              <Text style={{ fontSize: getFontSize(14) }} className="text-white font-bold tracking-wide mr-2">
+              <Text style={{ fontSize: getFontSize(17), color: '#fff', fontWeight: '600', marginRight: 8 }}>
                 Confirm & Get Token
               </Text>
               <Ionicons name="arrow-forward" size={18} color="#ffffff" />
@@ -189,9 +256,10 @@ export default function ConfirmNewToken({ route, navigation }) {
 
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          className="bg-white border border-slate-200 py-4 rounded-2xl items-center justify-center"
+          activeOpacity={0.7}
+          style={{ backgroundColor: IOS.fill, paddingVertical: 16, borderRadius: 16, alignItems: 'center', justifyContent: 'center' }}
         >
-          <Text style={{ fontSize: getFontSize(14) }} className="text-slate-600 font-bold tracking-wide">
+          <Text style={{ fontSize: getFontSize(16), color: IOS.secondaryLabel, fontWeight: '600' }}>
             Go Back
           </Text>
         </TouchableOpacity>
@@ -200,38 +268,42 @@ export default function ConfirmNewToken({ route, navigation }) {
 
       {/* Success Modal (Dynamic Data Display) */}
       {showSuccessModal && (
-        <View className="absolute inset-0 bg-black/60 justify-center items-center px-4 z-50">
-          <View className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-xl relative">
-            <View className="items-center mb-4">
-              <View className="w-14 h-14 rounded-full bg-emerald-50 justify-center items-center mb-2">
-                <Ionicons name="checkmark-circle-outline" size={32} color="#059669" />
+        <View style={overlayStyle}>
+          <View style={{ backgroundColor: IOS.white, width: '100%', maxWidth: 360, borderRadius: 28, padding: 24 }}>
+            <View style={{ alignItems: 'center', marginBottom: 18 }}>
+              <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: IOS.greenSoft, justifyContent: 'center', alignItems: 'center', marginBottom: 12 }}>
+                <Ionicons name="checkmark-circle" size={36} color={IOS.green} />
               </View>
-              <Text className="text-xl font-black text-slate-900 text-center">Token Issued Successfully!</Text>
-              <Text className="text-xs text-slate-500 text-center mt-1">
+              <Text style={{ fontSize: getFontSize(20), color: IOS.label, fontWeight: '700', textAlign: 'center' }}>Token Issued Successfully!</Text>
+              <Text style={{ fontSize: getFontSize(13), color: IOS.tertiaryLabel, textAlign: 'center', marginTop: 4 }}>
                 Your OPD appointment slot has been reserved
               </Text>
             </View>
 
-            <View className="bg-slate-50 border border-slate-100 rounded-2xl p-3.5 mb-4 flex-row justify-between items-center">
-              <View>
-                <Text className="text-xs font-black text-slate-900">{selectedClinic.name}</Text>
-                <Text className="text-[11px] text-slate-400 mt-0.5">👤 {user?.name || 'Rashmini Silva'}</Text>
+            <View style={{ backgroundColor: IOS.surface, borderRadius: 16, padding: 14, marginBottom: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <View style={{ flex: 1, paddingRight: 8 }}>
+                <Text numberOfLines={1} style={{ fontSize: getFontSize(15), color: IOS.label, fontWeight: '600' }}>{selectedClinic.name}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 3 }}>
+                  <Ionicons name="person-outline" size={12} color={IOS.tertiaryLabel} style={{ marginRight: 4 }} />
+                  <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel }}>{user?.name || 'Rashmini Silva'}</Text>
+                </View>
               </View>
-              <View className="bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
-                <Text className="text-[10px] font-bold text-emerald-700">CONFIRMED</Text>
+              <View style={{ backgroundColor: IOS.greenSoft, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 }}>
+                <Text style={{ fontSize: getFontSize(11), color: IOS.greenDark, fontWeight: '600' }}>Confirmed</Text>
               </View>
             </View>
 
-            <View className="bg-blue-50/50 border border-blue-100 rounded-2xl p-4 items-center mb-6">
-              <Text className="text-[10px] font-extrabold text-blue-600 tracking-wider uppercase mb-1">
-                YOUR OFFICIAL OPD TOKEN NUMBER
+            <View style={{ backgroundColor: IOS.surface, borderRadius: 18, paddingVertical: 18, paddingHorizontal: 16, alignItems: 'center', marginBottom: 20 }}>
+              <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, fontWeight: '500', textAlign: 'center' }}>
+                Your official OPD token number
               </Text>
               {/* API එකෙන් ලැබුණු සැබෑ ටෝකන් අංකය (tokenNo) හෝ ඩීෆෝල්ට් අගය පෙන්වීම */}
-              <Text className="text-3xl font-black text-slate-900 tracking-tight my-1">
+              <Text style={{ fontSize: getFontSize(38), color: IOS.label, fontWeight: '800', letterSpacing: 1, marginVertical: 4 }}>
                 {issuedTokenData?.tokenNo || issuedTokenData?.trackingCode || 'OPD-TOKEN'}
               </Text>
-              <View className="flex-row items-center mt-2 space-x-4">
-                <Text className="text-[11px] text-slate-500 font-medium">🏢 Counter: {selectedClinic.room}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                <Ionicons name="business-outline" size={13} color={IOS.tertiaryLabel} style={{ marginRight: 5 }} />
+                <Text style={{ fontSize: getFontSize(12), color: IOS.secondaryLabel, fontWeight: '500' }}>Counter: {selectedClinic.room}</Text>
               </View>
             </View>
 
@@ -240,10 +312,11 @@ export default function ConfirmNewToken({ route, navigation }) {
                 setShowSuccessModal(false);
                 navigation.navigate('MainTabs', { screen: 'LiveQueue' });
               }}
-              className="bg-blue-600 py-3.5 rounded-2xl flex-row justify-center items-center shadow-md mb-3"
+              activeOpacity={0.85}
+              style={{ backgroundColor: IOS.blue, paddingVertical: 15, borderRadius: 14, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 10 }}
             >
-              <Text className="text-white font-bold text-sm mr-2">View in My Queue</Text>
-              <Ionicons name="arrow-forward" size={16} color="#ffffff" />
+              <Text style={{ fontSize: getFontSize(16), color: '#fff', fontWeight: '600', marginRight: 8 }}>View in My Queue</Text>
+              <Ionicons name="arrow-forward" size={17} color="#ffffff" />
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -251,9 +324,10 @@ export default function ConfirmNewToken({ route, navigation }) {
                 setShowSuccessModal(false);
                 navigation.navigate('MainTabs', { screen: 'Home' });
               }}
-              className="bg-white border border-slate-200 py-3.5 rounded-2xl items-center justify-center"
+              activeOpacity={0.7}
+              style={{ backgroundColor: IOS.fill, paddingVertical: 15, borderRadius: 14, alignItems: 'center', justifyContent: 'center' }}
             >
-              <Text className="text-slate-600 font-bold text-sm">Dismiss & Return Home</Text>
+              <Text style={{ fontSize: getFontSize(16), color: IOS.secondaryLabel, fontWeight: '600' }}>Dismiss & Return Home</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -261,46 +335,47 @@ export default function ConfirmNewToken({ route, navigation }) {
 
       {/* Cancel / Error Modal */}
       {showCancelModal && (
-        <View className="absolute inset-0 bg-black/60 justify-center items-center px-4 z-50">
-          <View className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-xl relative">
+        <View style={overlayStyle}>
+          <View style={{ backgroundColor: IOS.white, width: '100%', maxWidth: 360, borderRadius: 28, padding: 24 }}>
             <TouchableOpacity 
               onPress={() => setShowCancelModal(false)}
-              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 justify-center items-center"
+              activeOpacity={0.7}
+              style={{ position: 'absolute', top: 14, right: 14, width: 30, height: 30, borderRadius: 15, backgroundColor: IOS.fill, justifyContent: 'center', alignItems: 'center', zIndex: 2 }}
             >
-              <Ionicons name="close" size={18} color="#64748b" />
+              <Ionicons name="close" size={17} color={IOS.secondaryLabel} />
             </TouchableOpacity>
 
-            <View className="items-center mb-4">
-              <View className={`w-14 h-14 rounded-full justify-center items-center mb-2 ${isAlreadyExists ? 'bg-amber-50' : 'bg-red-50'}`}>
+            <View style={{ alignItems: 'center', marginBottom: 18 }}>
+              <View style={{ width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', marginBottom: 12, backgroundColor: isAlreadyExists ? IOS.orangeSoft : IOS.redSoft }}>
                 <Ionicons 
                   name={isAlreadyExists ? "alert-circle-outline" : "close-circle-outline"} 
-                  size={32} 
-                  color={isAlreadyExists ? "#d97706" : "#ef4444"} 
+                  size={34} 
+                  color={isAlreadyExists ? IOS.orange : IOS.red} 
                 />
               </View>
-              <Text className="text-xl font-black text-slate-900 text-center">
+              <Text style={{ fontSize: getFontSize(20), color: IOS.label, fontWeight: '700', textAlign: 'center' }}>
                 {isAlreadyExists ? "Active Token Exists" : "Token Request Failed"}
               </Text>
-              <Text className="text-xs text-slate-500 text-center mt-1 px-2">
+              <Text style={{ fontSize: getFontSize(13), color: IOS.tertiaryLabel, textAlign: 'center', marginTop: 6, paddingHorizontal: 8, lineHeight: 19 }}>
                 {errorMessage || (isAlreadyExists 
                   ? "An active token already exists for this patient in this OPD today." 
                   : "Could not generate the token. Please check your network or try again.")}
               </Text>
             </View>
 
-            <View className="bg-slate-50 border border-slate-100 rounded-2xl p-3.5 mb-6 flex-row items-center">
-              <View className="w-10 h-10 rounded-xl bg-blue-50 justify-center items-center mr-3">
-                <Ionicons name={isAlreadyExists ? "time-outline" : "business-outline"} size={20} color="#2563eb" />
+            <View style={{ backgroundColor: IOS.surface, borderRadius: 16, padding: 14, marginBottom: 20, flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: IOS.fill, justifyContent: 'center', alignItems: 'center', marginRight: 12 }}>
+                <Ionicons name={isAlreadyExists ? "time-outline" : "business-outline"} size={20} color={IOS.secondaryLabel} />
               </View>
-              <View className="flex-1">
-                <Text className="text-sm font-bold text-slate-900">{selectedClinic.name}</Text>
-                <Text className="text-xs text-slate-400">
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: getFontSize(15), color: IOS.label, fontWeight: '600' }}>{selectedClinic.name}</Text>
+                <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, marginTop: 2 }}>
                   {isAlreadyExists ? "Please check your live queue status." : `${selectedClinic.room}`}
                 </Text>
               </View>
-              <View className={`px-2 py-1 rounded-full ${isAlreadyExists ? 'bg-amber-50 border border-amber-200' : 'bg-red-50 border border-red-100'}`}>
-                <Text className={`text-[10px] font-bold ${isAlreadyExists ? 'text-amber-700' : 'text-red-600'}`}>
-                  {isAlreadyExists ? 'ACTIVE' : 'FAILED'}
+              <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: isAlreadyExists ? IOS.orangeSoft : IOS.redSoft }}>
+                <Text style={{ fontSize: getFontSize(11), fontWeight: '600', color: isAlreadyExists ? IOS.orange : IOS.red }}>
+                  {isAlreadyExists ? 'Active' : 'Failed'}
                 </Text>
               </View>
             </View>
@@ -311,27 +386,30 @@ export default function ConfirmNewToken({ route, navigation }) {
                   setShowCancelModal(false);
                   navigation.navigate('MainTabs', { screen: 'LiveQueue' });
                 }}
-                className="bg-blue-600 py-3.5 rounded-2xl flex-row justify-center items-center shadow-md mb-2.5"
+                activeOpacity={0.85}
+                style={{ backgroundColor: IOS.blue, paddingVertical: 15, borderRadius: 14, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 10 }}
               >
-                <Text className="text-white font-bold text-sm mr-2">View Live Queue</Text>
-                <Ionicons name="arrow-forward" size={16} color="#ffffff" />
+                <Text style={{ fontSize: getFontSize(16), color: '#fff', fontWeight: '600', marginRight: 8 }}>View Live Queue</Text>
+                <Ionicons name="arrow-forward" size={17} color="#ffffff" />
               </TouchableOpacity>
             ) : (
               <TouchableOpacity 
                 onResp={() => setShowCancelModal(false)}
                 onPress={() => setShowCancelModal(false)}
-                className="bg-slate-900 py-4 rounded-2xl flex-row justify-center items-center shadow-md mb-2.5"
+                activeOpacity={0.85}
+                style={{ backgroundColor: IOS.label, paddingVertical: 15, borderRadius: 14, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 10 }}
               >
-                <Text className="text-white font-bold text-sm mr-2">Try Again</Text>
-                <Ionicons name="arrow-forward" size={16} color="#ffffff" />
+                <Text style={{ fontSize: getFontSize(16), color: '#fff', fontWeight: '600', marginRight: 8 }}>Try Again</Text>
+                <Ionicons name="arrow-forward" size={17} color="#ffffff" />
               </TouchableOpacity>
             )}
 
             <TouchableOpacity 
               onPress={() => setShowCancelModal(false)}
-              className="bg-white border border-slate-200 py-3.5 rounded-2xl items-center justify-center"
+              activeOpacity={0.7}
+              style={{ backgroundColor: IOS.fill, paddingVertical: 15, borderRadius: 14, alignItems: 'center', justifyContent: 'center' }}
             >
-              <Text className="text-slate-600 font-bold text-sm">Close</Text>
+              <Text style={{ fontSize: getFontSize(16), color: IOS.secondaryLabel, fontWeight: '600' }}>Close</Text>
             </TouchableOpacity>
           </View>
         </View>
