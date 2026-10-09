@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useContext, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -15,10 +16,33 @@ import {
   MaterialCommunityIcons,
   FontAwesome5,
 } from '@expo/vector-icons';
+import { AuthContext } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import API from '../../services/api';
+import AppHeader from '../../components/AppHeader'; // Reusable Header එක import කිරීම
+
+// iOS system colors
+const IOS = {
+  blue: '#007AFF',
+  green: '#34C759',
+  bg: '#F2F2F7',
+  label: '#000000',
+  secondaryLabel: '#8E8E93',
+  fill: '#F2F2F7',
+  separator: '#C6C6C8',
+};
+
+// iOS style soft shadow
+const cardShadow = {
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.06,
+  shadowRadius: 12,
+  elevation: 2,
+};
 
 export default function LiveQueue({ navigation, route }) {
+  const { user } = useContext(AuthContext);
   const { getFontSize, t } = useSettings();
 
   const [loading, setLoading] = useState(true);
@@ -44,35 +68,50 @@ export default function LiveQueue({ navigation, route }) {
         const detailedQueueList = await Promise.all(
           activeTokens.map(async (myData) => {
             let liveQueueData = [];
-            let nowServingToken = '---';
+            let nowServingToken = myData.currentServing || '---';
 
             if (myData.opdId) {
               try {
                 const liveRes = await API.get(`/queue/live/${myData.opdId}`);
                 if (liveRes.data && liveRes.data.success) {
                   const liveData = liveRes.data.data;
-                  nowServingToken = liveData.currentToken || '---';
+                  nowServingToken = liveData.currentToken || liveData.currentServing || myData.currentServing || '---';
 
-                  liveQueueData = (liveData.queue || []).map((qToken) => {
-                    const isUser = qToken.tokenNo === myData.tokenNo;
-                    const isCurrent = qToken.tokenNo === liveData.currentToken;
+                  const rawQueue = liveData.queue || liveData.tokens || [];
+                  liveQueueData = rawQueue.map((qToken) => {
+                    const tokenValue = typeof qToken === 'string' ? qToken : (qToken.tokenNo || qToken.token || '');
+                    const isUser = tokenValue === myData.tokenNo;
+                    const isCurrent = tokenValue === nowServingToken;
 
-                    let statusText = qToken.status ? qToken.status.toUpperCase() : '';
+                    let statusText = qToken.status ? qToken.status.toUpperCase() : (isCurrent ? 'CURRENT' : (isUser ? 'YOU' : 'WAITING'));
                     if (isCurrent) statusText = 'CURRENT';
                     if (isUser) statusText = 'YOU';
 
                     return {
-                      token: qToken.tokenNo,
+                      token: tokenValue,
                       status: statusText,
                       isCurrent,
                       isUser,
-                      rawStatus: qToken.status,
+                      rawStatus: qToken.status || 'waiting',
                     };
                   });
                 }
               } catch (err) {
                 console.log('Error fetching live queue for opd:', myData.opdId);
               }
+            }
+
+            // එක API එකකින් queue array එක නොලැබුණහොත් myData එක ඇතුළේ ඇති දත්ත මත පදනම්ව fallback එකක් සකස් කිරීම
+            if (liveQueueData.length === 0 && myData.tokenNo) {
+              liveQueueData = [
+                {
+                  token: myData.tokenNo,
+                  status: 'YOU',
+                  isCurrent: false,
+                  isUser: true,
+                  rawStatus: myData.status || 'waiting',
+                }
+              ];
             }
 
             return {
@@ -113,43 +152,38 @@ export default function LiveQueue({ navigation, route }) {
   };
 
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-slate-50">
+    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: IOS.bg }}>
+      {/* Reusable AppHeader එක මෙතැනට ඇතුළත් කර ඇත */}
+      <AppHeader
+        userName={user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : 'User'}
+        onNotificationPress={() => navigation?.navigate('Alerts')}
+        onPrescriptionPress={() => {
+          console.log('Prescription icon pressed');
+        }}
+      />
+
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 30 }}
+        contentContainerStyle={{ paddingBottom: 110 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {/* Header Section */}
-        <View className="flex-row justify-between items-center px-5 pt-3 pb-2">
-          <View className="flex-row items-center">
-            <View className="w-9 h-9 justify-center items-center mr-2">
-              <MaterialCommunityIcons name="hospital-box-outline" size={32} color="#0284c7" />
-            </View>
-            <View>
-              <Text style={{ fontSize: getFontSize(10) }} className="font-bold text-blue-600 tracking-wider">
-                {t?.appTitle || 'MEDIQUEUE'}
-              </Text>
-              <Text style={{ fontSize: getFontSize(18) }} className="font-bold text-slate-900 leading-5">
-                {t?.myQueueHeader || 'MY QUEUE'}
-              </Text>
-            </View>
-          </View>
-
-          <TouchableOpacity
-            onPress={() => navigation?.navigate('Profile')}
-            className="w-10 h-10 bg-blue-600 rounded-full justify-center items-center shadow-sm"
+        {/* Large Title (iOS style) */}
+        <View className="px-5 mt-3 mb-2">
+          <Text
+            style={{ fontSize: getFontSize(34), letterSpacing: 0.37, color: IOS.label }}
+            className="font-bold"
           >
-            <Ionicons name="person" size={20} color="#ffffff" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Title Bar */}
-        <View className="flex-row items-center px-5 my-2">
-          <Text style={{ fontSize: getFontSize(24) }} className="font-extrabold text-slate-900 mr-2">
             {t?.liveQueueTitle || 'Live Queue'}
           </Text>
-          <View className="bg-emerald-100 px-3 py-1 rounded-full">
-            <Text style={{ fontSize: getFontSize(12) }} className="font-semibold text-emerald-600">
+          <View className="flex-row items-center mt-1">
+            <View
+              style={{ backgroundColor: IOS.green }}
+              className="w-2 h-2 rounded-full mr-1.5"
+            />
+            <Text
+              style={{ fontSize: getFontSize(13), color: IOS.secondaryLabel }}
+              className="font-medium"
+            >
               Active Sessions
             </Text>
           </View>
@@ -157,16 +191,30 @@ export default function LiveQueue({ navigation, route }) {
 
         {loading ? (
           <View className="py-20 justify-center items-center">
-            <ActivityIndicator size="large" color="#0284c7" />
+            <ActivityIndicator size="large" color={IOS.secondaryLabel} />
           </View>
         ) : queueList.length === 0 ? (
           /* No Active Token Card */
-          <View className="mx-5 my-6 bg-white rounded-3xl p-8 items-center shadow-sm border border-slate-100">
-            <MaterialCommunityIcons name="ticket-confirmation-outline" size={60} color="#94a3b8" />
-            <Text style={{ fontSize: getFontSize(18) }} className="font-extrabold text-slate-800 mt-4 text-center">
+          <View
+            style={cardShadow}
+            className="mx-4 mt-6 bg-white rounded-[20px] px-6 py-10 items-center"
+          >
+            <View
+              style={{ backgroundColor: IOS.fill }}
+              className="w-20 h-20 rounded-full items-center justify-center mb-4"
+            >
+              <MaterialCommunityIcons name="ticket-confirmation-outline" size={40} color={IOS.secondaryLabel} />
+            </View>
+            <Text
+              style={{ fontSize: getFontSize(20), color: IOS.label }}
+              className="font-semibold text-center"
+            >
               No Active Token Found
             </Text>
-            <Text style={{ fontSize: getFontSize(12) }} className="text-slate-500 text-center mt-1 leading-5">
+            <Text
+              style={{ fontSize: getFontSize(14), color: IOS.secondaryLabel }}
+              className="text-center mt-2 leading-5"
+            >
               You do not have an active queue booking for today. Book a token to view live queue details.
             </Text>
           </View>
@@ -178,120 +226,183 @@ export default function LiveQueue({ navigation, route }) {
             const hospitalName = queueData.hospital || 'National Hospital Colombo';
 
             return (
-              <View key={queueData.id || queueData.tokenId || index} className="mx-5 my-3">
-                
-                {/* Clinic Info Header Tag */}
-                <View className="bg-blue-600 px-4 py-2 rounded-t-2xl flex-row justify-between items-center">
-                  <Text style={{ fontSize: getFontSize(13) }} className="text-white font-bold">
-                    🏥 {clinicName} ({roomNo})
-                  </Text>
-                  <Text style={{ fontSize: getFontSize(11) }} className="text-blue-100 font-medium">
-                    {hospitalName}
-                  </Text>
+              <View
+                key={queueData.id || queueData.tokenId || index}
+                style={cardShadow}
+                className="mx-4 mt-4 bg-white rounded-[20px] overflow-hidden"
+              >
+                {/* Clinic Info Header */}
+                <View
+                  style={{ borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: IOS.separator }}
+                  className="flex-row items-center px-4 py-3.5"
+                >
+                  <View
+                    style={{ backgroundColor: IOS.blue }}
+                    className="w-9 h-9 rounded-[10px] items-center justify-center mr-3"
+                  >
+                    <MaterialCommunityIcons name="hospital-building" size={20} color="#ffffff" />
+                  </View>
+                  <View className="flex-1">
+                    <Text
+                      numberOfLines={1}
+                      style={{ fontSize: getFontSize(16), color: IOS.label }}
+                      className="font-semibold"
+                    >
+                      {clinicName}
+                    </Text>
+                    <Text
+                      numberOfLines={1}
+                      style={{ fontSize: getFontSize(12), color: IOS.secondaryLabel }}
+                      className="mt-0.5"
+                    >
+                      {hospitalName} · {roomNo}
+                    </Text>
+                  </View>
                 </View>
 
-                {/* Main Ticket Card */}
-                <View className="bg-white rounded-b-3xl p-5 shadow-sm border-x border-b border-slate-100 mb-2">
-                  <Text style={{ fontSize: getFontSize(12) }} className="text-center font-semibold text-slate-400 tracking-wider mb-1">
+                {/* Main Ticket Section */}
+                <View className="p-4">
+                  <Text
+                    style={{ fontSize: getFontSize(12), color: IOS.secondaryLabel, letterSpacing: 0.6 }}
+                    className="text-center font-semibold uppercase mt-1"
+                  >
                     {t?.yourTokenNumber || 'YOUR TOKEN NUMBER'}
                   </Text>
-                  <Text style={{ fontSize: getFontSize(48) }} className="text-center font-black text-slate-900 mb-5 tracking-tight">
+                  <Text
+                    style={{ fontSize: getFontSize(56), color: IOS.label, letterSpacing: -1 }}
+                    className="text-center font-bold mt-1 mb-5"
+                  >
                     {queueData.tokenNo || queueData.tokenSequence || '---'}
                   </Text>
 
                   {/* Grid Cards (Now Serving & Est. Wait Time) */}
                   <View className="flex-row gap-3 mb-4">
                     {/* Now Serving Card */}
-                    <View className="flex-1 bg-blue-600 rounded-2xl p-4 justify-between min-h-[120px]">
-                      <Text style={{ fontSize: getFontSize(10) }} className="font-bold text-blue-200 tracking-wider uppercase">
+                    <View
+                      style={{ backgroundColor: IOS.blue }}
+                      className="flex-1 rounded-2xl p-4 justify-between min-h-[124px]"
+                    >
+                      <Text
+                        style={{ fontSize: getFontSize(11), color: 'rgba(255,255,255,0.75)', letterSpacing: 0.5 }}
+                        className="font-semibold uppercase"
+                      >
                         {t?.nowServing || 'NOW SERVING'}
                       </Text>
-                      <Text style={{ fontSize: getFontSize(30) }} className="font-black text-white">
+                      <Text style={{ fontSize: getFontSize(32) }} className="font-bold text-white">
                         {queueData.nowServingToken}
                       </Text>
-                      <Text style={{ fontSize: getFontSize(11) }} className="text-blue-100 font-medium leading-4">
+                      <Text
+                        style={{ fontSize: getFontSize(11), color: 'rgba(255,255,255,0.85)' }}
+                        className="leading-4"
+                      >
                         {t?.doctorWithPatient || 'Doctor is currently with patient'}
                       </Text>
                     </View>
 
                     {/* Est. Wait Time Card */}
-                    <View className="flex-1 bg-slate-100/80 rounded-2xl p-4 justify-between min-h-[120px]">
-                      <Text style={{ fontSize: getFontSize(10) }} className="font-bold text-slate-400 tracking-wider uppercase">
+                    <View
+                      style={{ backgroundColor: IOS.fill }}
+                      className="flex-1 rounded-2xl p-4 justify-between min-h-[124px]"
+                    >
+                      <Text
+                        style={{ fontSize: getFontSize(11), color: IOS.secondaryLabel, letterSpacing: 0.5 }}
+                        className="font-semibold uppercase"
+                      >
                         {t?.estWaitTime || 'EST. WAIT TIME'}
                       </Text>
                       <View className="flex-row items-baseline">
-                        <Text style={{ fontSize: getFontSize(24) }} className="font-black text-slate-900">
+                        <Text style={{ fontSize: getFontSize(28), color: IOS.label }} className="font-bold">
                           ~ {queueData.estimatedWaitMinutes || 0}{' '}
                         </Text>
-                        <Text style={{ fontSize: getFontSize(14) }} className="font-bold text-slate-900">
+                        <Text style={{ fontSize: getFontSize(15), color: IOS.label }} className="font-semibold">
                           mins
                         </Text>
                       </View>
                       <View className="flex-row items-center">
-                        <Ionicons name="time-outline" size={13} color="#64748b" />
-                        <Text style={{ fontSize: getFontSize(11) }} className="text-slate-500 font-medium ml-1">
+                        <Ionicons name="time-outline" size={13} color={IOS.secondaryLabel} />
+                        <Text
+                          style={{ fontSize: getFontSize(11), color: IOS.secondaryLabel }}
+                          className="font-medium ml-1"
+                        >
                           Live Estimate
                         </Text>
                       </View>
                     </View>
                   </View>
 
-                  {/* Patients Ahead Alert Bar */}
-                  <View className="bg-blue-50/70 rounded-2xl p-3 flex-row items-center justify-between mb-4">
-                    <View className="flex-row items-center">
-                      <View className="w-8 h-8 rounded-full bg-blue-600 justify-center items-center mr-2">
+                  {/* Patients Ahead Row */}
+                  <View
+                    style={{ backgroundColor: IOS.fill }}
+                    className="rounded-2xl px-3.5 py-3 flex-row items-center justify-between mb-4"
+                  >
+                    <View className="flex-row items-center flex-1">
+                      <View
+                        style={{ backgroundColor: IOS.blue }}
+                        className="w-8 h-8 rounded-full justify-center items-center mr-2.5"
+                      >
                         <FontAwesome5 name="users" size={12} color="#ffffff" />
                       </View>
-                      <Text style={{ fontSize: getFontSize(12) }} className="font-bold text-slate-700">
+                      <Text
+                        style={{ fontSize: getFontSize(13), color: IOS.label }}
+                        className="font-semibold flex-1"
+                      >
                         {queueData.patientsAhead !== undefined ? queueData.patientsAhead : 0} PATIENTS AHEAD OF YOU
                       </Text>
                     </View>
-                    <View className="bg-white px-2.5 py-1 rounded-lg border border-slate-200">
-                      <Text style={{ fontSize: getFontSize(11) }} className="font-semibold text-slate-500">
+                    <View className="bg-white px-2.5 py-1 rounded-full ml-2">
+                      <Text style={{ fontSize: getFontSize(11), color: IOS.secondaryLabel }} className="font-semibold">
                         {queueData.opdId || 'OPD'}
                       </Text>
                     </View>
                   </View>
 
-                  {/* Queue Progress List Card */}
-                  <View className="bg-slate-50/50 rounded-2xl p-4 border border-slate-100">
-                    <View className="flex-row justify-between items-center mb-3">
-                      <View className="flex-row items-center">
-                        <MaterialIcons name="format-list-numbered" size={18} color="#1e293b" />
-                        <Text style={{ fontSize: getFontSize(15) }} className="font-bold text-slate-800 ml-2">
-                          {t?.queueProgress || 'Queue Progress'}
-                        </Text>
-                      </View>
-                      <Text style={{ fontSize: getFontSize(11) }} className="font-semibold text-slate-400">
-                        Active Tokens
+                  {/* Queue Progress (inset grouped list) */}
+                  <View className="flex-row justify-between items-center px-1 mb-2">
+                    <View className="flex-row items-center">
+                      <MaterialIcons name="format-list-numbered" size={18} color={IOS.label} />
+                      <Text
+                        style={{ fontSize: getFontSize(17), color: IOS.label }}
+                        className="font-semibold ml-2"
+                      >
+                        {t?.queueProgress || 'Queue Progress'}
                       </Text>
                     </View>
+                    <Text style={{ fontSize: getFontSize(12), color: IOS.secondaryLabel }} className="font-medium">
+                      Active Tokens
+                    </Text>
+                  </View>
 
-                    {/* Dynamic Queue List */}
-                    <View className="gap-2">
-                      {queueData.liveQueueData && queueData.liveQueueData.length > 0 ? (
-                        queueData.liveQueueData.map((item, qIdx) => (
+                  {/* Dynamic Queue List */}
+                  <View style={{ backgroundColor: IOS.fill }} className="rounded-2xl overflow-hidden">
+                    {queueData.liveQueueData && queueData.liveQueueData.length > 0 ? (
+                      queueData.liveQueueData.map((item, qIdx) => {
+                        const isLast = qIdx === queueData.liveQueueData.length - 1;
+                        return (
                           <View
                             key={qIdx}
-                            className={`flex-row justify-between items-center p-2.5 rounded-xl ${
-                              item.isCurrent
-                                ? 'bg-blue-50 border border-blue-200'
-                                : item.isUser
-                                ? 'bg-blue-100/60 border border-blue-300'
-                                : 'bg-white border border-slate-100'
-                            }`}
+                            style={{
+                              backgroundColor: item.isUser
+                                ? '#DCEBFF'
+                                : item.isCurrent
+                                ? '#EAF3FF'
+                                : '#FFFFFF',
+                              borderBottomWidth: isLast ? 0 : StyleSheet.hairlineWidth,
+                              borderBottomColor: IOS.separator,
+                            }}
+                            className="flex-row justify-between items-center px-3.5 py-3"
                           >
                             <View className="flex-row items-center">
                               <MaterialCommunityIcons
                                 name={item.isUser ? 'account-box-outline' : 'clock-outline'}
-                                size={18}
-                                color={item.isCurrent || item.isUser ? '#2563eb' : '#94a3b8'}
+                                size={20}
+                                color={item.isCurrent || item.isUser ? IOS.blue : '#AEAEB2'}
                               />
                               <Text
-                                style={{ fontSize: getFontSize(13) }}
-                                className={`ml-2.5 font-bold ${
-                                  item.isCurrent || item.isUser ? 'text-blue-700' : 'text-slate-600'
-                                }`}
+                                style={{
+                                  fontSize: getFontSize(15),
+                                  color: item.isCurrent || item.isUser ? IOS.blue : IOS.label,
+                                }}
+                                className="ml-3 font-semibold"
                               >
                                 {item.token}
                               </Text>
@@ -299,82 +410,86 @@ export default function LiveQueue({ navigation, route }) {
 
                             {/* Status Badges */}
                             {item.isCurrent ? (
-                              <View className="bg-blue-600 px-2.5 py-0.5 rounded-md">
-                                <Text style={{ fontSize: getFontSize(9) }} className="font-extrabold text-white">
+                              <View style={{ backgroundColor: IOS.blue }} className="px-2.5 py-1 rounded-full">
+                                <Text style={{ fontSize: getFontSize(10) }} className="font-bold text-white">
                                   {t?.statusCurrent || 'CURRENT'}
                                 </Text>
                               </View>
                             ) : item.isUser ? (
-                              <View className="bg-blue-600 px-2.5 py-0.5 rounded-md">
-                                <Text style={{ fontSize: getFontSize(9) }} className="font-extrabold text-white">
+                              <View style={{ backgroundColor: IOS.blue }} className="px-2.5 py-1 rounded-full">
+                                <Text style={{ fontSize: getFontSize(10) }} className="font-bold text-white">
                                   {t?.statusYou || 'YOU'}
                                 </Text>
                               </View>
                             ) : (
                               <Text
-                                style={{ fontSize: getFontSize(10) }}
-                                className={`font-bold ${
-                                  item.rawStatus === 'in-consultation' ? 'text-blue-600' : 'text-slate-500'
-                                }`}
+                                style={{
+                                  fontSize: getFontSize(11),
+                                  color: item.rawStatus === 'in-consultation' ? IOS.blue : IOS.secondaryLabel,
+                                }}
+                                className="font-semibold"
                               >
                                 {item.status}
                               </Text>
                             )}
                           </View>
-                        ))
-                      ) : (
-                        <Text style={{ fontSize: getFontSize(12) }} className="text-slate-400 text-center py-2">
-                          No queue details available.
-                        </Text>
-                      )}
-                    </View>
-
-                    {/* Footer Status Message */}
-                    <View className="flex-row items-center justify-center mt-3 pt-3 border-t border-slate-200/60">
-                      <Ionicons name="checkmark-circle-outline" size={14} color="#16a34a" />
-                      <Text style={{ fontSize: getFontSize(10) }} className="font-bold text-slate-500 ml-1 uppercase tracking-tight">
-                        {t?.queueStatusMoving || 'QUEUE IS MOVING'}
+                        );
+                      })
+                    ) : (
+                      <Text
+                        style={{ fontSize: getFontSize(13), color: IOS.secondaryLabel }}
+                        className="text-center py-4 bg-white"
+                      >
+                        No queue details available.
                       </Text>
-                      <Text style={{ fontSize: getFontSize(9) }} className="font-semibold text-slate-400 ml-2 uppercase">
-                        UPDATED: {queueData.lastUpdatedTime}
-                      </Text>
-                    </View>
+                    )}
                   </View>
 
+                  {/* Footer Status Message */}
+                  <View className="flex-row items-center justify-center mt-4">
+                    <Ionicons name="checkmark-circle" size={14} color={IOS.green} />
+                    <Text
+                      style={{ fontSize: getFontSize(11), color: IOS.secondaryLabel }}
+                      className="font-semibold ml-1 uppercase"
+                    >
+                      {t?.queueStatusMoving || 'QUEUE IS MOVING'}
+                    </Text>
+                    <Text
+                      style={{ fontSize: getFontSize(10), color: '#AEAEB2' }}
+                      className="font-medium ml-2 uppercase"
+                    >
+                      UPDATED: {queueData.lastUpdatedTime}
+                    </Text>
+                  </View>
                 </View>
-
               </View>
             );
           })
         )}
       </ScrollView>
 
-{/* Floating Chatbot Button */}
-<TouchableOpacity
-  onPress={() => navigation?.navigate('Chatbot')}
-  activeOpacity={0.85}
-  className="absolute bottom-6 right-5 w-14 h-14 bg-blue-600 rounded-full justify-center items-center shadow-lg z-50"
-  style={{
-    elevation: 8,
-    shadowColor: '#2563eb',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-  }}
->
-  <MaterialCommunityIcons
-    name="robot-outline"
-    size={28}
-    color="#ffffff"
-  />
+      {/* Floating Chatbot Button */}
+      <TouchableOpacity
+        onPress={() => navigation?.navigate('Chatbot')}
+        activeOpacity={0.85}
+        className="absolute bottom-6 right-5 w-14 h-14 rounded-full justify-center items-center z-50"
+        style={{
+          backgroundColor: IOS.blue,
+          elevation: 8,
+          shadowColor: IOS.blue,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 8,
+        }}
+      >
+        <MaterialCommunityIcons name="robot-outline" size={28} color="#ffffff" />
 
-  {/* Green Online Indicator */}
-  <View
-    className="absolute bottom-0.5 right-0.5 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white"
-  />
-</TouchableOpacity>
-
-      
+        {/* Green Online Indicator */}
+        <View
+          style={{ backgroundColor: IOS.green }}
+          className="absolute bottom-0.5 right-0.5 w-4 h-4 rounded-full border-2 border-white"
+        />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
