@@ -5,8 +5,40 @@ import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { AuthContext } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import API from '../../services/api';
+import AppHeader from '../../components/AppHeader'; // Reusable Header එක import කිරීම
 
-export default function Alerts() {
+// iOS system colors - blue as accent, soft grouped background + white cards
+const IOS = {
+  blue: '#007AFF',
+  blueSoft: 'rgba(0,122,255,0.10)',
+  green: '#34C759',
+  orange: '#FF9500',
+  orangeSoft: 'rgba(255,149,0,0.14)',
+  label: '#1C1C1E',
+  secondaryLabel: '#636366',
+  tertiaryLabel: '#8E8E93',
+  fill: '#EFEFF4',
+  surface: '#F7F7FA',
+  separator: '#E4E4EA',
+  groupedBg: '#F4F5F9',
+  white: '#FFFFFF',
+};
+
+// iOS style soft shadow for cards
+const cardShadow = {
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.05,
+  shadowRadius: 10,
+  elevation: 2,
+};
+
+// Shared layout bits
+const cardBase = { backgroundColor: IOS.white, borderRadius: 22, padding: 18, marginBottom: 14 };
+const iconBox = { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginRight: 12 };
+const BODY_INDENT = 52; // icon width (40) + margin (12)
+
+export default function Alerts({ navigation }) {
   const { user } = useContext(AuthContext);
   const { getFontSize, t } = useSettings();
 
@@ -41,7 +73,6 @@ export default function Alerts() {
             detectedType = 'QUEUE_UPDATE';
           }
 
-          // සටහන: isRead හරියට එන්නේ නැති නම්, sentAt එක බලලා පැයකට වඩා පැරණි ඒවා older ලෙස ගන්නත් පුළුවන්
           const itemTime = item.sentAt ? new Date(item.sentAt).getTime() : new Date().getTime();
           const oneHourAgo = new Date().getTime() - (60 * 60 * 1000);
           const isReallyOlder = item.isRead === true || itemTime < oneHourAgo;
@@ -95,89 +126,87 @@ export default function Alerts() {
   const newAlerts = alerts.filter((a) => !a.isOlder);
   const olderAlerts = alerts.filter((a) => a.isOlder);
 
+  const patientName = user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : 'User';
+
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-white">
+    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: IOS.groupedBg }}>
+      {/* Reusable AppHeader එක මෙතැනට ඇතුළත් කර ඇත */}
+      <AppHeader
+        userName={patientName}
+        onNotificationPress={() => {
+          // දැනට Alerts page එකේදීම සිටී
+        }}
+        onPrescriptionPress={() => {
+          console.log('Prescription icon pressed');
+        }}
+      />
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 100 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={IOS.tertiaryLabel} colors={[IOS.blue]} />}
       >
-        {/* Header Section */}
-        <View className="flex-row justify-between items-center px-5 pt-3 pb-3">
-          <View className="flex-row items-center">
-            <View className="w-10 h-10 justify-center items-center mr-2.5">
-              <View className="relative w-9 h-9 items-center justify-center">
-                <View className="absolute w-4 h-9 bg-blue-600 rounded-full" />
-                <View className="absolute w-9 h-4 bg-blue-400 rounded-full" />
-                <View className="absolute w-4 h-4 bg-sky-300 rounded-full top-0 left-0" />
-              </View>
-            </View>
-            <View>
-              <Text style={{ fontSize: getFontSize(10) }} className="font-extrabold text-blue-600 tracking-[2px]">
-                MEDIQUEUE
-              </Text>
-              <Text style={{ fontSize: getFontSize(22) }} className="font-black text-slate-900 tracking-tight leading-6">
-                ALERTS
-              </Text>
-            </View>
-          </View>
-
-          <TouchableOpacity className="w-11 h-11 bg-blue-600 rounded-full justify-center items-center shadow-md">
-            <Ionicons name="person" size={20} color="#ffffff" />
-          </TouchableOpacity>
-        </View>
 
         {loading ? (
-          <View className="py-20 justify-center items-center">
-            <ActivityIndicator size="large" color="#0284c7" />
+          <View style={{ paddingVertical: 80, justifyContent: 'center', alignItems: 'center' }}>
+            <ActivityIndicator size="large" color={IOS.tertiaryLabel} />
           </View>
         ) : (
-          <View className="px-5 mt-2 gap-4">
+          <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
+
+            {/* Page title */}
+            <Text style={{ fontSize: getFontSize(28), color: IOS.label, fontWeight: '700', letterSpacing: 0.3, marginBottom: 16, paddingHorizontal: 2 }}>
+              Alerts
+            </Text>
+
             {newAlerts.length === 0 ? (
-              <Text style={{ fontSize: getFontSize(12) }} className="text-center text-slate-400 py-10">
-                No new alerts
-              </Text>
+              <View style={[{ backgroundColor: IOS.white, borderRadius: 22, paddingVertical: 36, alignItems: 'center', marginBottom: 14 }, cardShadow]}>
+                <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: IOS.fill, justifyContent: 'center', alignItems: 'center', marginBottom: 10 }}>
+                  <Ionicons name="notifications-off-outline" size={26} color={IOS.tertiaryLabel} />
+                </View>
+                <Text style={{ fontSize: getFontSize(14), color: IOS.tertiaryLabel, fontWeight: '500' }}>
+                  No new alerts
+                </Text>
+              </View>
             ) : (
               newAlerts.map((item) => {
                 // 1. YOUR TURN CARD
                 if (item.type === 'YOUR_TURN') {
                   return (
-                    <View
-                      key={item.id}
-                      className="bg-white rounded-3xl p-5 border-l-[6px] border-l-blue-600 border border-slate-200/80 shadow-sm"
-                    >
-                      <View className="flex-row justify-between items-center mb-2">
-                        <View className="flex-row items-center">
-                          <View className="w-9 h-9 rounded-xl bg-blue-50 justify-center items-center mr-3">
-                            <Ionicons name="notifications" size={18} color="#2563eb" />
+                    <View key={item.id} style={[cardBase, cardShadow]}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                          <View style={[iconBox, { backgroundColor: IOS.blue }]}>
+                            <Ionicons name="notifications" size={19} color="#fff" />
                           </View>
-                          <Text style={{ fontSize: getFontSize(14) }} className="font-black text-slate-900 tracking-wider">
-                            YOUR TURN
+                          <Text style={{ fontSize: getFontSize(17), color: IOS.label, fontWeight: '700' }}>
+                            Your turn
                           </Text>
                         </View>
-                        <Text style={{ fontSize: getFontSize(11) }} className="font-semibold text-slate-400">{item.time}</Text>
+                        <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, fontWeight: '500' }}>{item.time}</Text>
                       </View>
 
-                      <View className="ml-12">
-                        <Text style={{ fontSize: getFontSize(14) }} className="font-bold text-slate-900 leading-5">
-                          Please proceed to <Text className="text-blue-600 underline">{item.room}.</Text>
+                      <View style={{ marginLeft: BODY_INDENT }}>
+                        <Text style={{ fontSize: getFontSize(15), color: IOS.label, fontWeight: '600', lineHeight: 21 }}>
+                          Please proceed to <Text style={{ color: IOS.blue }}>{item.room}.</Text>
                         </Text>
-                        <Text style={{ fontSize: getFontSize(12) }} className="text-slate-400 mt-1">
+                        <Text style={{ fontSize: getFontSize(13), color: IOS.tertiaryLabel, marginTop: 4, lineHeight: 19 }}>
                           - {item.location} {'\n'}{item.doctor}
                         </Text>
 
-                        <View className="flex-row gap-2.5 mt-4">
-                          <TouchableOpacity className="bg-blue-600 px-5 py-2.5 rounded-xl shadow-sm">
-                            <Text style={{ fontSize: getFontSize(11) }} className="text-white font-bold tracking-wide">
-                              VIEW DIRECTIONS
+                        <View style={{ flexDirection: 'row', marginTop: 16 }}>
+                          <TouchableOpacity activeOpacity={0.85} style={{ backgroundColor: IOS.blue, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 12, marginRight: 10 }}>
+                            <Text style={{ fontSize: getFontSize(13), color: '#fff', fontWeight: '600' }}>
+                              View directions
                             </Text>
                           </TouchableOpacity>
                           <TouchableOpacity
                             onPress={() => handleDismiss(item.id)}
-                            className="bg-slate-100 px-5 py-2.5 rounded-xl"
+                            activeOpacity={0.7}
+                            style={{ backgroundColor: IOS.fill, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 12 }}
                           >
-                            <Text style={{ fontSize: getFontSize(11) }} className="text-slate-600 font-bold tracking-wide">
-                              DISMISS
+                            <Text style={{ fontSize: getFontSize(13), color: IOS.secondaryLabel, fontWeight: '600' }}>
+                              Dismiss
                             </Text>
                           </TouchableOpacity>
                         </View>
@@ -189,33 +218,30 @@ export default function Alerts() {
                 // 2. YOUR TURN IS NEAR CARD
                 if (item.type === 'TURN_NEAR') {
                   return (
-                    <View
-                      key={item.id}
-                      className="bg-white rounded-3xl p-5 border-l-[6px] border-l-amber-400 border border-slate-200/80 shadow-sm"
-                    >
-                      <View className="flex-row justify-between items-center mb-2">
-                        <View className="flex-row items-center">
-                          <View className="w-9 h-9 rounded-xl bg-amber-50 justify-center items-center mr-3">
-                            <Feather name="clock" size={18} color="#d97706" />
+                    <View key={item.id} style={[cardBase, cardShadow]}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                          <View style={[iconBox, { backgroundColor: IOS.orangeSoft }]}>
+                            <Feather name="clock" size={19} color={IOS.orange} />
                           </View>
-                          <Text style={{ fontSize: getFontSize(14) }} className="font-black text-slate-900 tracking-wider">
-                            YOUR TURN IS NEAR
+                          <Text style={{ fontSize: getFontSize(17), color: IOS.label, fontWeight: '700' }}>
+                            Your turn is near
                           </Text>
                         </View>
-                        <Text style={{ fontSize: getFontSize(11) }} className="font-semibold text-slate-400">{item.time}</Text>
+                        <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, fontWeight: '500' }}>{item.time}</Text>
                       </View>
 
-                      <View className="ml-12">
-                        <Text style={{ fontSize: getFontSize(13) }} className="text-slate-600 leading-5">
-                          <Text className="font-bold text-slate-900">
+                      <View style={{ marginLeft: BODY_INDENT }}>
+                        <Text style={{ fontSize: getFontSize(14), color: IOS.secondaryLabel, lineHeight: 21 }}>
+                          <Text style={{ fontWeight: '700', color: IOS.label }}>
                             {item.remainingNumbers} numbers remaining.
                           </Text>{' '}
                           {item.message || 'Please return to the OPD waiting area immediately.'}
                         </Text>
 
-                        <View className="mt-3.5 self-start bg-amber-50/80 border border-amber-200/60 px-3.5 py-2 rounded-full flex-row items-center">
-                          <View className="w-2 h-2 rounded-full bg-amber-500 mr-2" />
-                          <Text style={{ fontSize: getFontSize(11) }} className="font-bold text-amber-900">
+                        <View style={{ marginTop: 14, alignSelf: 'flex-start', backgroundColor: IOS.surface, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, flexDirection: 'row', alignItems: 'center' }}>
+                          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: IOS.orange, marginRight: 8 }} />
+                          <Text style={{ fontSize: getFontSize(12), color: IOS.secondaryLabel, fontWeight: '600' }}>
                             Current serving: {item.currentServing} ({item.aheadCount} ahead)
                           </Text>
                         </View>
@@ -226,24 +252,21 @@ export default function Alerts() {
 
                 // 3. QUEUE UPDATE CARD
                 return (
-                  <View
-                    key={item.id}
-                    className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-sm"
-                  >
-                    <View className="flex-row justify-between items-center">
-                      <View className="flex-row items-center">
-                        <View className="w-9 h-9 rounded-xl bg-slate-100 justify-center items-center mr-3">
-                          <Ionicons name="clipboard-outline" size={18} color="#64748b" />
+                  <View key={item.id} style={[cardBase, cardShadow]}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                        <View style={[iconBox, { backgroundColor: IOS.fill }]}>
+                          <Ionicons name="clipboard-outline" size={19} color={IOS.secondaryLabel} />
                         </View>
-                        <Text style={{ fontSize: getFontSize(14) }} className="font-black text-slate-800 tracking-wider">
-                          QUEUE UPDATE
+                        <Text style={{ fontSize: getFontSize(17), color: IOS.label, fontWeight: '700' }}>
+                          Queue update
                         </Text>
                       </View>
-                      <Text style={{ fontSize: getFontSize(11) }} className="font-semibold text-slate-400">{item.time}</Text>
+                      <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, fontWeight: '500' }}>{item.time}</Text>
                     </View>
 
-                    <View className="ml-12 mt-1.5">
-                      <Text style={{ fontSize: getFontSize(13) }} className="text-slate-500 leading-5">
+                    <View style={{ marginLeft: BODY_INDENT, marginTop: 6 }}>
+                      <Text style={{ fontSize: getFontSize(14), color: IOS.secondaryLabel, lineHeight: 21 }}>
                         {item.message || 'Queue progress updated for your active booking.'}
                       </Text>
                     </View>
@@ -253,20 +276,19 @@ export default function Alerts() {
             )}
 
             {/* Older Notifications Divider */}
-            <View className="flex-row items-center my-3">
-              <View className="flex-1 h-[1px] bg-slate-200" />
-              <Text style={{ fontSize: getFontSize(10) }} className="mx-4 font-bold text-slate-400 tracking-widest uppercase">
-                OLDER NOTIFICATIONS
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 14, marginBottom: 14 }}>
+              <Text style={{ fontSize: getFontSize(13), color: IOS.tertiaryLabel, fontWeight: '600', marginRight: 12 }}>
+                Older notifications
               </Text>
-              <View className="flex-1 h-[1px] bg-slate-200" />
+              <View style={{ flex: 1, height: 1, backgroundColor: IOS.separator }} />
             </View>
 
             {olderAlerts.length === 0 ? (
-              <View className="py-2" />
+              <View style={{ paddingVertical: 8 }} />
             ) : (
               olderAlerts.map((item) => (
-                <View key={item.id} className="bg-white rounded-2xl p-4 border border-slate-200/80 opacity-60 mb-2">
-                  <Text style={{ fontSize: getFontSize(12) }} className="text-slate-600">{item.message}</Text>
+                <View key={item.id} style={{ backgroundColor: IOS.white, borderRadius: 16, padding: 16, opacity: 0.65, marginBottom: 10 }}>
+                  <Text style={{ fontSize: getFontSize(13), color: IOS.secondaryLabel, lineHeight: 19 }}>{item.message}</Text>
                 </View>
               ))
             )}
@@ -274,15 +296,7 @@ export default function Alerts() {
         )}
       </ScrollView>
 
-      {/* Floating Chatbot Button */}
-      <View className="absolute bottom-6 right-5 z-50">
-        <TouchableOpacity className="w-14 h-14 bg-white rounded-full justify-center items-center shadow-lg border border-slate-100">
-          <View className="w-12 h-12 bg-blue-600 rounded-full justify-center items-center relative">
-            <MaterialCommunityIcons name="robot-happy" size={26} color="#ffffff" />
-            <View className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white" />
-          </View>
-        </TouchableOpacity>
-      </View>
+      
     </SafeAreaView>
   );
 }
