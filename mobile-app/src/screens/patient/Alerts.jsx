@@ -20,22 +20,31 @@ const IOS = {
   fill: '#EFEFF4',
   surface: '#F7F7FA',
   separator: '#E4E4EA',
-  groupedBg: '#F4F5F9',
+  groupedBg: '#F2F2F7',
   white: '#FFFFFF',
 };
 
 // iOS style soft shadow for cards
 const cardShadow = {
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.05,
-  shadowRadius: 10,
+  shadowColor: '#0B1B3A',
+  shadowOffset: { width: 0, height: 6 },
+  shadowOpacity: 0.07,
+  shadowRadius: 16,
   elevation: 2,
 };
 
 // Shared layout bits
-const cardBase = { backgroundColor: IOS.white, borderRadius: 22, padding: 18, marginBottom: 14 };
-const iconBox = { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginRight: 12 };
+const squircle = { borderCurve: 'continuous' };
+const cardBase = {
+  backgroundColor: IOS.white,
+  borderRadius: 22,
+  padding: 18,
+  marginBottom: 14,
+  borderWidth: 0.5,
+  borderColor: 'rgba(60,60,67,0.12)',
+  borderCurve: 'continuous',
+};
+const iconBox = { width: 40, height: 40, borderRadius: 12, borderCurve: 'continuous', justifyContent: 'center', alignItems: 'center', marginRight: 12 };
 const BODY_INDENT = 52; // icon width (40) + margin (12)
 
 export default function Alerts({ navigation }) {
@@ -152,15 +161,15 @@ export default function Alerts({ navigation }) {
             <ActivityIndicator size="large" color={IOS.tertiaryLabel} />
           </View>
         ) : (
-          <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
+          <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
 
             {/* Page title */}
-            <Text style={{ fontSize: getFontSize(28), color: IOS.label, fontWeight: '700', letterSpacing: 0.3, marginBottom: 16, paddingHorizontal: 2 }}>
+            <Text style={{ fontSize: getFontSize(28), color: IOS.label, fontWeight: '700', letterSpacing: 0.3, marginBottom: 16, paddingHorizontal: 4 }}>
               Alerts
             </Text>
 
             {newAlerts.length === 0 ? (
-              <View style={[{ backgroundColor: IOS.white, borderRadius: 22, paddingVertical: 36, alignItems: 'center', marginBottom: 14 }, cardShadow]}>
+              <View style={[{ backgroundColor: IOS.white, borderRadius: 22, paddingVertical: 36, alignItems: 'center', marginBottom: 14, borderWidth: 0.5, borderColor: 'rgba(60,60,67,0.12)' }, squircle, cardShadow]}>
                 <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: IOS.fill, justifyContent: 'center', alignItems: 'center', marginBottom: 10 }}>
                   <Ionicons name="notifications-off-outline" size={26} color={IOS.tertiaryLabel} />
                 </View>
@@ -173,13 +182,13 @@ export default function Alerts({ navigation }) {
                 // 1. YOUR TURN CARD
                 if (item.type === 'YOUR_TURN') {
                   return (
-                    <View key={item.id} style={[cardBase, cardShadow]}>
+                    <View key={item.id} style={[cardBase, cardShadow, { borderColor: 'rgba(0,122,255,0.30)' }]}>
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                           <View style={[iconBox, { backgroundColor: IOS.blue }]}>
                             <Ionicons name="notifications" size={19} color="#fff" />
                           </View>
-                          <Text style={{ fontSize: getFontSize(17), color: IOS.label, fontWeight: '700' }}>
+                          <Text style={{ fontSize: getFontSize(17), color: IOS.label, fontWeight: '700', letterSpacing: -0.2 }}>
                             Your turn
                           </Text>
                         </View>
@@ -195,7 +204,7 @@ export default function Alerts({ navigation }) {
                         </Text>
 
                         <View style={{ flexDirection: 'row', marginTop: 16 }}>
-                          <TouchableOpacity activeOpacity={0.85} style={{ backgroundColor: IOS.blue, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 12, marginRight: 10 }}>
+                          <TouchableOpacity activeOpacity={0.85} style={[{ backgroundColor: IOS.blue, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 999, marginRight: 10 }, squircle]}>
                             <Text style={{ fontSize: getFontSize(13), color: '#fff', fontWeight: '600' }}>
                               View directions
                             </Text>
@@ -203,7 +212,7 @@ export default function Alerts({ navigation }) {
                           <TouchableOpacity
                             onPress={() => handleDismiss(item.id)}
                             activeOpacity={0.7}
-                            style={{ backgroundColor: IOS.fill, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 12 }}
+                            style={[{ backgroundColor: IOS.fill, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 999 }, squircle]}
                           >
                             <Text style={{ fontSize: getFontSize(13), color: IOS.secondaryLabel, fontWeight: '600' }}>
                               Dismiss
@@ -224,7 +233,7 @@ export default function Alerts({ navigation }) {
                           <View style={[iconBox, { backgroundColor: IOS.orangeSoft }]}>
                             <Feather name="clock" size={19} color={IOS.orange} />
                           </View>
-                          <Text style={{ fontSize: getFontSize(17), color: IOS.label, fontWeight: '700' }}>
+                          <Text style={{ fontSize: getFontSize(17), color: IOS.label, fontWeight: '700', letterSpacing: -0.2 }}>
                             Your turn is near
                           </Text>
                         </View>
@@ -258,7 +267,7 @@ export default function Alerts({ navigation }) {
                         <View style={[iconBox, { backgroundColor: IOS.fill }]}>
                           <Ionicons name="clipboard-outline" size={19} color={IOS.secondaryLabel} />
                         </View>
-                        <Text style={{ fontSize: getFontSize(17), color: IOS.label, fontWeight: '700' }}>
+                        <Text style={{ fontSize: getFontSize(17), color: IOS.label, fontWeight: '700', letterSpacing: -0.2 }}>
                           Queue update
                         </Text>
                       </View>
@@ -276,18 +285,18 @@ export default function Alerts({ navigation }) {
             )}
 
             {/* Older Notifications Divider */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 14, marginBottom: 14 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 14, marginBottom: 14, paddingHorizontal: 4 }}>
               <Text style={{ fontSize: getFontSize(13), color: IOS.tertiaryLabel, fontWeight: '600', marginRight: 12 }}>
                 Older notifications
               </Text>
-              <View style={{ flex: 1, height: 1, backgroundColor: IOS.separator }} />
+              <View style={{ flex: 1, height: 0.5, backgroundColor: 'rgba(60,60,67,0.25)' }} />
             </View>
 
             {olderAlerts.length === 0 ? (
               <View style={{ paddingVertical: 8 }} />
             ) : (
               olderAlerts.map((item) => (
-                <View key={item.id} style={{ backgroundColor: IOS.white, borderRadius: 16, padding: 16, opacity: 0.65, marginBottom: 10 }}>
+                <View key={item.id} style={[{ backgroundColor: IOS.white, borderRadius: 18, padding: 16, opacity: 0.7, marginBottom: 10, borderWidth: 0.5, borderColor: 'rgba(60,60,67,0.10)' }, squircle]}>
                   <Text style={{ fontSize: getFontSize(13), color: IOS.secondaryLabel, lineHeight: 19 }}>{item.message}</Text>
                 </View>
               ))

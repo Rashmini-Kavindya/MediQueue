@@ -26,18 +26,22 @@ const IOS = {
   fill: '#EFEFF4',
   surface: '#F7F7FA',
   separator: '#E9E9EE',
-  groupedBg: '#F4F5F9',
+  groupedBg: '#F2F2F7',
   white: '#FFFFFF',
 };
 
 // iOS style soft shadow for cards
 const cardShadow = {
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.05,
-  shadowRadius: 10,
+  shadowColor: '#0B1B3A',
+  shadowOffset: { width: 0, height: 6 },
+  shadowOpacity: 0.07,
+  shadowRadius: 16,
   elevation: 2,
 };
+
+// iOS squircle corners + hairline edge (Android වල ignore වෙනවා)
+const squircle = { borderCurve: 'continuous' };
+const edge = { borderWidth: 0.5, borderColor: 'rgba(60,60,67,0.12)' };
 
 // Optional route params (sent from the chatbot "Get Token" button):
 //   opdId  - OPD to pre-select
@@ -152,12 +156,12 @@ export default function RequestNewToken({ navigation, route }) {
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: IOS.groupedBg }}>
       {/* Top Header */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
           <TouchableOpacity 
             onPress={() => navigation.goBack()}
             activeOpacity={0.7}
-            style={[{ width: 38, height: 38, borderRadius: 19, backgroundColor: IOS.white, justifyContent: 'center', alignItems: 'center', marginRight: 12 }, cardShadow]}
+            style={[{ width: 38, height: 38, borderRadius: 19, backgroundColor: IOS.white, justifyContent: 'center', alignItems: 'center', marginRight: 12 }, edge, cardShadow]}
           >
             <Ionicons name="chevron-back" size={22} color={IOS.blue} />
           </TouchableOpacity>
@@ -165,7 +169,7 @@ export default function RequestNewToken({ navigation, route }) {
             <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, fontWeight: '600' }}>
               MediQueue OPD
             </Text>
-            <Text style={{ fontSize: getFontSize(22), color: IOS.label, fontWeight: '700', letterSpacing: 0.3 }}>
+            <Text style={{ fontSize: getFontSize(22), color: IOS.label, fontWeight: '700', letterSpacing: 0.2 }}>
               Request New Token
             </Text>
           </View>
@@ -180,21 +184,21 @@ export default function RequestNewToken({ navigation, route }) {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets
-        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 40 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 40 }}
       >
         
         {/* Patient Information Section */}
-        <Text style={{ fontSize: getFontSize(19), color: IOS.label, fontWeight: '700', letterSpacing: 0.3, marginBottom: 10, paddingHorizontal: 2 }}>
+        <Text style={{ fontSize: getFontSize(13), color: IOS.tertiaryLabel, fontWeight: '600', letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 8, paddingHorizontal: 6 }}>
           Patient Information
         </Text>
         
-        <View style={[{ backgroundColor: IOS.white, borderRadius: 22, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }, cardShadow]}>
+        <View style={[{ backgroundColor: IOS.white, borderRadius: 22, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }, squircle, edge, cardShadow]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 8 }}>
-            <View style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: IOS.fill, justifyContent: 'center', alignItems: 'center', marginRight: 12 }}>
-              <Text style={{ fontSize: getFontSize(15), color: IOS.secondaryLabel, fontWeight: '700' }}>{patientInitials}</Text>
+            <View style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: IOS.blueSoft, justifyContent: 'center', alignItems: 'center', marginRight: 12 }}>
+              <Text style={{ fontSize: getFontSize(15), color: IOS.blue, fontWeight: '700' }}>{patientInitials}</Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text numberOfLines={1} style={{ fontSize: getFontSize(16), color: IOS.label, fontWeight: '600' }}>
+              <Text numberOfLines={1} style={{ fontSize: getFontSize(16), color: IOS.label, fontWeight: '600', letterSpacing: -0.2 }}>
                 {patientName}
               </Text>
               <Text numberOfLines={1} style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, marginTop: 3 }}>
@@ -206,7 +210,7 @@ export default function RequestNewToken({ navigation, route }) {
           {isNicVerified && (
           <View style={{ backgroundColor: IOS.greenSoft, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, flexDirection: 'row', alignItems: 'center' }}>
             <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: IOS.green, marginRight: 6 }} />
-            <Text style={{ fontSize: getFontSize(11), color: IOS.secondaryLabel, fontWeight: '600' }}>
+            <Text style={{ fontSize: getFontSize(11), color: '#248A3D', fontWeight: '600' }}>
               NIC Verified
             </Text>
           </View>
@@ -214,8 +218,8 @@ export default function RequestNewToken({ navigation, route }) {
         </View>
 
         {/* Select OPD Department Section */}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, paddingHorizontal: 2 }}>
-          <Text style={{ fontSize: getFontSize(19), color: IOS.label, fontWeight: '700', letterSpacing: 0.3 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, paddingHorizontal: 6 }}>
+          <Text style={{ fontSize: getFontSize(13), color: IOS.tertiaryLabel, fontWeight: '600', letterSpacing: 0.6, textTransform: 'uppercase' }}>
             Select OPD Department
           </Text>
           <TouchableOpacity activeOpacity={0.6}>
@@ -247,7 +251,7 @@ export default function RequestNewToken({ navigation, route }) {
                   activeOpacity={0.8}
                   style={[
                     {
-                      backgroundColor: IOS.white,
+                      backgroundColor: isSelected ? '#F5F9FF' : IOS.white,
                       padding: 14,
                       borderRadius: 20,
                       marginBottom: 10,
@@ -257,11 +261,12 @@ export default function RequestNewToken({ navigation, route }) {
                       borderWidth: 2,
                       borderColor: isSelected ? IOS.blue : 'transparent',
                     },
+                    squircle,
                     cardShadow,
                   ]}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 8 }}>
-                    <View style={{ width: 42, height: 42, borderRadius: 12, backgroundColor: iconBg, justifyContent: 'center', alignItems: 'center', marginRight: 12 }}>
+                    <View style={[{ width: 44, height: 44, borderRadius: 13, backgroundColor: iconBg, justifyContent: 'center', alignItems: 'center', marginRight: 12 }, squircle]}>
                       {isCardiology && <Ionicons name="heart" size={19} color={IOS.red} />}
                       {isDental && <FontAwesome5 name="tooth" size={16} color={IOS.blue} />} 
                       {isEye && <Ionicons name="eye" size={20} color={IOS.teal} />}
@@ -270,7 +275,7 @@ export default function RequestNewToken({ navigation, route }) {
                       )}
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: getFontSize(16), color: IOS.label, fontWeight: '600' }} numberOfLines={1}>
+                      <Text style={{ fontSize: getFontSize(16), color: IOS.label, fontWeight: '600', letterSpacing: -0.2 }} numberOfLines={1}>
                         {clinic.name}
                       </Text>
                       <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, marginTop: 3 }}>
@@ -306,11 +311,11 @@ export default function RequestNewToken({ navigation, route }) {
         )}
 
         {/* Reason for Visit */}
-        <View style={{ flexDirection: 'row', alignItems: 'baseline', marginBottom: 10, marginTop: 10, paddingHorizontal: 2 }}>
-          <Text style={{ fontSize: getFontSize(19), color: IOS.label, fontWeight: '700', letterSpacing: 0.3 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', marginBottom: 8, marginTop: 10, paddingHorizontal: 6 }}>
+          <Text style={{ fontSize: getFontSize(13), color: IOS.tertiaryLabel, fontWeight: '600', letterSpacing: 0.6, textTransform: 'uppercase' }}>
             Reason for Visit
           </Text>
-          <Text style={{ fontSize: getFontSize(13), color: IOS.tertiaryLabel, marginLeft: 8 }}>
+          <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, marginLeft: 8 }}>
             (optional)
           </Text>
         </View>
@@ -334,6 +339,8 @@ export default function RequestNewToken({ navigation, route }) {
               marginBottom: 24,
               lineHeight: 21,
             },
+            squircle,
+            edge,
             cardShadow,
           ]}
           textAlignVertical="top"
@@ -343,7 +350,23 @@ export default function RequestNewToken({ navigation, route }) {
         <TouchableOpacity
           onPress={handleContinue}
           activeOpacity={0.85}
-          style={{ backgroundColor: IOS.blue, paddingVertical: 16, borderRadius: 16, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', marginBottom: 10 }}
+          style={[
+            {
+              backgroundColor: IOS.blue,
+              paddingVertical: 16,
+              borderRadius: 16,
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexDirection: 'row',
+              marginBottom: 10,
+              shadowColor: IOS.blue,
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.3,
+              shadowRadius: 12,
+              elevation: 4,
+            },
+            squircle,
+          ]}
         >
           <Text style={{ fontSize: getFontSize(17), color: '#fff', fontWeight: '600', marginRight: 8 }}>
             Continue to Confirmation
@@ -354,7 +377,7 @@ export default function RequestNewToken({ navigation, route }) {
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           activeOpacity={0.7}
-          style={{ backgroundColor: IOS.fill, paddingVertical: 16, borderRadius: 16, alignItems: 'center', justifyContent: 'center' }}
+          style={[{ backgroundColor: IOS.fill, paddingVertical: 16, borderRadius: 16, alignItems: 'center', justifyContent: 'center' }, squircle]}
         >
           <Text style={{ fontSize: getFontSize(16), color: IOS.secondaryLabel, fontWeight: '600' }}>
             Cancel / Back to Home

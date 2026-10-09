@@ -24,7 +24,9 @@ import AppHeader from '../../components/AppHeader'; // Reusable Header එක im
 // iOS system colors
 const IOS = {
   blue: '#007AFF',
+  blueSoft: 'rgba(0,122,255,0.10)',
   green: '#34C759',
+  greenSoft: 'rgba(52,199,89,0.14)',
   bg: '#F2F2F7',
   label: '#000000',
   secondaryLabel: '#8E8E93',
@@ -34,12 +36,16 @@ const IOS = {
 
 // iOS style soft shadow
 const cardShadow = {
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.06,
-  shadowRadius: 12,
+  shadowColor: '#0B1B3A',
+  shadowOffset: { width: 0, height: 6 },
+  shadowOpacity: 0.07,
+  shadowRadius: 16,
   elevation: 2,
 };
+
+// iOS squircle corners + hairline edge (Android වල ignore වෙනවා)
+const squircle = { borderCurve: 'continuous' };
+const cardEdge = { borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(60,60,67,0.12)' };
 
 export default function LiveQueue({ navigation, route }) {
   const { user } = useContext(AuthContext);
@@ -168,21 +174,24 @@ export default function LiveQueue({ navigation, route }) {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         {/* Large Title (iOS style) */}
-        <View className="px-5 mt-3 mb-2">
+        <View className="px-5 mt-4 mb-2">
           <Text
-            style={{ fontSize: getFontSize(34), letterSpacing: 0.37, color: IOS.label }}
+            style={{ fontSize: getFontSize(30), letterSpacing: 0.3, color: IOS.label }}
             className="font-bold"
           >
             {t?.liveQueueTitle || 'Live Queue'}
           </Text>
-          <View className="flex-row items-center mt-1">
+          <View
+            style={[{ backgroundColor: IOS.greenSoft, alignSelf: 'flex-start' }, squircle]}
+            className="flex-row items-center mt-2 px-2.5 py-1 rounded-full"
+          >
             <View
               style={{ backgroundColor: IOS.green }}
               className="w-2 h-2 rounded-full mr-1.5"
             />
             <Text
-              style={{ fontSize: getFontSize(13), color: IOS.secondaryLabel }}
-              className="font-medium"
+              style={{ fontSize: getFontSize(12), color: '#248A3D' }}
+              className="font-semibold"
             >
               Active Sessions
             </Text>
@@ -196,17 +205,17 @@ export default function LiveQueue({ navigation, route }) {
         ) : queueList.length === 0 ? (
           /* No Active Token Card */
           <View
-            style={cardShadow}
-            className="mx-4 mt-6 bg-white rounded-[20px] px-6 py-10 items-center"
+            style={[cardShadow, cardEdge, squircle]}
+            className="mx-4 mt-6 bg-white rounded-[24px] px-6 py-10 items-center"
           >
             <View
-              style={{ backgroundColor: IOS.fill }}
+              style={{ backgroundColor: IOS.blueSoft }}
               className="w-20 h-20 rounded-full items-center justify-center mb-4"
             >
-              <MaterialCommunityIcons name="ticket-confirmation-outline" size={40} color={IOS.secondaryLabel} />
+              <MaterialCommunityIcons name="ticket-confirmation-outline" size={38} color={IOS.blue} />
             </View>
             <Text
-              style={{ fontSize: getFontSize(20), color: IOS.label }}
+              style={{ fontSize: getFontSize(19), color: IOS.label }}
               className="font-semibold text-center"
             >
               No Active Token Found
@@ -228,8 +237,8 @@ export default function LiveQueue({ navigation, route }) {
             return (
               <View
                 key={queueData.id || queueData.tokenId || index}
-                style={cardShadow}
-                className="mx-4 mt-4 bg-white rounded-[20px] overflow-hidden"
+                style={[cardShadow, cardEdge, squircle]}
+                className="mx-4 mt-4 bg-white rounded-[24px] overflow-hidden"
               >
                 {/* Clinic Info Header */}
                 <View
@@ -237,15 +246,15 @@ export default function LiveQueue({ navigation, route }) {
                   className="flex-row items-center px-4 py-3.5"
                 >
                   <View
-                    style={{ backgroundColor: IOS.blue }}
-                    className="w-9 h-9 rounded-[10px] items-center justify-center mr-3"
+                    style={[{ backgroundColor: IOS.blue }, squircle]}
+                    className="w-10 h-10 rounded-[12px] items-center justify-center mr-3"
                   >
                     <MaterialCommunityIcons name="hospital-building" size={20} color="#ffffff" />
                   </View>
                   <View className="flex-1">
                     <Text
                       numberOfLines={1}
-                      style={{ fontSize: getFontSize(16), color: IOS.label }}
+                      style={{ fontSize: getFontSize(16), color: IOS.label, letterSpacing: -0.2 }}
                       className="font-semibold"
                     >
                       {clinicName}
@@ -262,25 +271,30 @@ export default function LiveQueue({ navigation, route }) {
 
                 {/* Main Ticket Section */}
                 <View className="p-4">
-                  <Text
-                    style={{ fontSize: getFontSize(12), color: IOS.secondaryLabel, letterSpacing: 0.6 }}
-                    className="text-center font-semibold uppercase mt-1"
+                  <View
+                    style={[{ backgroundColor: IOS.blueSoft }, squircle]}
+                    className="rounded-[20px] py-4 mb-4"
                   >
-                    {t?.yourTokenNumber || 'YOUR TOKEN NUMBER'}
-                  </Text>
-                  <Text
-                    style={{ fontSize: getFontSize(56), color: IOS.label, letterSpacing: -1 }}
-                    className="text-center font-bold mt-1 mb-5"
-                  >
-                    {queueData.tokenNo || queueData.tokenSequence || '---'}
-                  </Text>
+                    <Text
+                      style={{ fontSize: getFontSize(11), color: IOS.blue, letterSpacing: 0.8 }}
+                      className="text-center font-semibold uppercase"
+                    >
+                      {t?.yourTokenNumber || 'YOUR TOKEN NUMBER'}
+                    </Text>
+                    <Text
+                      style={{ fontSize: getFontSize(48), color: IOS.label, letterSpacing: -1 }}
+                      className="text-center font-bold mt-1"
+                    >
+                      {queueData.tokenNo || queueData.tokenSequence || '---'}
+                    </Text>
+                  </View>
 
                   {/* Grid Cards (Now Serving & Est. Wait Time) */}
                   <View className="flex-row gap-3 mb-4">
                     {/* Now Serving Card */}
                     <View
-                      style={{ backgroundColor: IOS.blue }}
-                      className="flex-1 rounded-2xl p-4 justify-between min-h-[124px]"
+                      style={[{ backgroundColor: IOS.blue }, squircle]}
+                      className="flex-1 rounded-[20px] p-4 justify-between min-h-[124px]"
                     >
                       <Text
                         style={{ fontSize: getFontSize(11), color: 'rgba(255,255,255,0.75)', letterSpacing: 0.5 }}
@@ -288,7 +302,7 @@ export default function LiveQueue({ navigation, route }) {
                       >
                         {t?.nowServing || 'NOW SERVING'}
                       </Text>
-                      <Text style={{ fontSize: getFontSize(32) }} className="font-bold text-white">
+                      <Text style={{ fontSize: getFontSize(30) }} className="font-bold text-white">
                         {queueData.nowServingToken}
                       </Text>
                       <Text
@@ -301,8 +315,8 @@ export default function LiveQueue({ navigation, route }) {
 
                     {/* Est. Wait Time Card */}
                     <View
-                      style={{ backgroundColor: IOS.fill }}
-                      className="flex-1 rounded-2xl p-4 justify-between min-h-[124px]"
+                      style={[{ backgroundColor: IOS.fill }, squircle]}
+                      className="flex-1 rounded-[20px] p-4 justify-between min-h-[124px]"
                     >
                       <Text
                         style={{ fontSize: getFontSize(11), color: IOS.secondaryLabel, letterSpacing: 0.5 }}
@@ -332,8 +346,8 @@ export default function LiveQueue({ navigation, route }) {
 
                   {/* Patients Ahead Row */}
                   <View
-                    style={{ backgroundColor: IOS.fill }}
-                    className="rounded-2xl px-3.5 py-3 flex-row items-center justify-between mb-4"
+                    style={[{ backgroundColor: IOS.fill }, squircle]}
+                    className="rounded-[18px] px-3.5 py-3 flex-row items-center justify-between mb-4"
                   >
                     <View className="flex-row items-center flex-1">
                       <View
@@ -361,7 +375,7 @@ export default function LiveQueue({ navigation, route }) {
                     <View className="flex-row items-center">
                       <MaterialIcons name="format-list-numbered" size={18} color={IOS.label} />
                       <Text
-                        style={{ fontSize: getFontSize(17), color: IOS.label }}
+                        style={{ fontSize: getFontSize(16), color: IOS.label, letterSpacing: -0.2 }}
                         className="font-semibold ml-2"
                       >
                         {t?.queueProgress || 'Queue Progress'}
@@ -373,7 +387,10 @@ export default function LiveQueue({ navigation, route }) {
                   </View>
 
                   {/* Dynamic Queue List */}
-                  <View style={{ backgroundColor: IOS.fill }} className="rounded-2xl overflow-hidden">
+                  <View
+                    style={[{ backgroundColor: IOS.fill }, squircle]}
+                    className="rounded-[18px] overflow-hidden"
+                  >
                     {queueData.liveQueueData && queueData.liveQueueData.length > 0 ? (
                       queueData.liveQueueData.map((item, qIdx) => {
                         const isLast = qIdx === queueData.liveQueueData.length - 1;
@@ -477,9 +494,9 @@ export default function LiveQueue({ navigation, route }) {
           backgroundColor: IOS.blue,
           elevation: 8,
           shadowColor: IOS.blue,
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: 0.35,
+          shadowRadius: 12,
         }}
       >
         <MaterialCommunityIcons name="robot-outline" size={28} color="#ffffff" />

@@ -99,7 +99,8 @@ export default function SelectOpdScreen({ navigation, route }) {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    // NOTE: className is NOT used on SafeAreaView (third-party component) -> use style instead
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
       {/* Header */}
       <View className="flex-row items-center px-5 py-4 border-b border-slate-100">
         <TouchableOpacity onPress={() => navigation.goBack()} className="p-1 mr-3">
@@ -128,11 +129,12 @@ export default function SelectOpdScreen({ navigation, route }) {
 
         {/* Content List */}
         {loading ? (
-          <View className="flex-1 justify-center items-center">
+          <View key="loading-view" className="flex-1 justify-center items-center">
             <ActivityIndicator size="large" color="#0052CC" />
           </View>
         ) : (
           <ScrollView
+            key="list-view"
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 100 }}
           >
@@ -151,20 +153,17 @@ export default function SelectOpdScreen({ navigation, route }) {
                     key={item.opdId}
                     activeOpacity={0.7}
                     onPress={() => setSelectedOpdId(item.opdId)}
-                    className={`flex-row items-center p-4 rounded-2xl mb-3.5 border ${
-                      isSelected
-                        ? 'border-[#0052CC] bg-white shadow-sm'
-                        : 'border-slate-100 bg-white'
-                    }`}
+                    // Static className only; all selected/unselected differences are in style
+                    className="flex-row items-center p-4 rounded-2xl mb-3.5 bg-white"
                     style={{
                       borderWidth: isSelected ? 2 : 1,
+                      borderColor: isSelected ? '#0052CC' : '#F1F5F9',
                     }}
                   >
                     {/* Icon Container */}
                     <View
-                      className={`w-12 h-12 rounded-2xl justify-center items-center mr-4 ${
-                        isSelected ? 'bg-blue-50' : 'bg-slate-50'
-                      }`}
+                      className="w-12 h-12 rounded-2xl justify-center items-center mr-4"
+                      style={{ backgroundColor: isSelected ? '#EFF6FF' : '#F8FAFC' }}
                     >
                       <Ionicons
                         name={getOpdIcon(item.name, item.department)}
@@ -209,7 +208,7 @@ export default function SelectOpdScreen({ navigation, route }) {
           activeOpacity={0.8}
           onPress={handleContinue}
           disabled={loading || !selectedOpdId}
-          className="bg-[#0052CC] py-4 rounded-xl flex-row items-center justify-center shadow-sm"
+          className="bg-[#0052CC] py-4 rounded-xl flex-row items-center justify-center"
           style={{ opacity: loading || !selectedOpdId ? 0.6 : 1 }}
         >
           <Text className="text-white font-bold text-base mr-2">
