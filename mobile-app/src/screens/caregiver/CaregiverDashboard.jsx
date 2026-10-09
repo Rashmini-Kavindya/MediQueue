@@ -25,6 +25,13 @@ import {
   unlinkPatient
 } from '../../services/caregiverApi';
 import RemovePatientModal from '../../components/caregiver/RemovePatientModal';
+// Small, screen-specific translations avoid changing the shared caregiver translations.
+const QUICK_ACCESS_LABELS = {
+  en: { title: 'QUICK ACCESS', add: 'Add Patient', waiting: 'Waiting Areas' },
+  si: { title: 'ඉක්මන් ප්‍රවේශය', add: 'රෝගියෙකු එක් කරන්න', waiting: 'රැඳී සිටින ස්ථාන' },
+  ta: { title: 'விரைவு அணுகல்', add: 'நோயாளியைச் சேர்க்க', waiting: 'காத்திருப்பு இடங்கள்' }
+};
+
 export default function CaregiverDashboard({
   navigation
 }) {
@@ -44,8 +51,8 @@ export default function CaregiverDashboard({
   const [removing, setRemoving] = useState(false);
   const [removeError, setRemoveError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-
   const language = (i18n.resolvedLanguage || i18n.language || 'en').split('-')[0];
+  const quickLabels = QUICK_ACCESS_LABELS[language] || QUICK_ACCESS_LABELS.en;
   const actionLabels = {
     en: {
       removed: (name) => `${name} has been removed from your caregiver account.`,
@@ -63,25 +70,21 @@ export default function CaregiverDashboard({
     removed: (name) => `${name} has been removed from your caregiver account.`,
     removeFailed: 'Unable to remove this linked patient. Please try again.'
   };
-
   const openManagePatient = (link) => {
     setRemoveError('');
     setSelectedLink(link);
   };
-
   const closeManagePatient = () => {
     if (removing) return;
     setRemoveError('');
     setSelectedLink(null);
   };
-
   const handleUnlinkPatient = async () => {
     if (!selectedLink || removing) return;
     if (!selectedLink.linkId) {
       setRemoveError(actionLabels.removeFailed);
       return;
     }
-
     setRemoving(true);
     setRemoveError('');
     const linkToRemove = selectedLink;
@@ -89,13 +92,11 @@ export default function CaregiverDashboard({
       linkToRemove.patient?.firstName,
       linkToRemove.patient?.lastName
     ].filter(Boolean).join(' ') || 'Patient';
-
     try {
       const result = await unlinkPatient(linkToRemove.linkId);
       if (result?.success !== true) {
         throw new Error(result?.message || actionLabels.removeFailed);
       }
-
       // Immediately remove only this caregiver's link from the screen.
       setLinks((previous) => previous.filter(
         (link) => link.linkId !== linkToRemove.linkId
@@ -204,6 +205,37 @@ export default function CaregiverDashboard({
               {L.updated}
             </Text>
           </View>
+          {/* Always visible above the patient list, regardless of patient count. */}
+          <View style={styles.quickAccessSection}>
+            <Text style={styles.quickAccessHeading}>{quickLabels.title}</Text>
+            <View style={styles.quickAccessRow}>
+              <TouchableOpacity
+                style={[styles.quickAccessButton, styles.quickAddButton]}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={quickLabels.add}
+                onPress={() => navigation.navigate('LinkPatient')}
+              >
+                <View style={styles.quickIconCircleAdd}>
+                  <Ionicons name="person-add-outline" size={17} color="#FFFFFF" />
+                </View>
+                <Text style={styles.quickAddText} numberOfLines={2}>{quickLabels.add}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.quickAccessButton, styles.quickWaitingButton]}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={quickLabels.waiting}
+                onPress={() => navigation.navigate('CaregiverWaitingAreas')}
+              >
+                <View style={styles.quickIconCircleWaiting}>
+                  <Ionicons name="cafe-outline" size={17} color="#155EEF" />
+                </View>
+                <Text style={styles.quickWaitingText} numberOfLines={2}>{quickLabels.waiting}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
           {!!successMessage && (
             <View style={styles.successBanner}>
               <Ionicons name="checkmark-circle-outline" size={19} color="#047857" />
@@ -266,16 +298,6 @@ export default function CaregiverDashboard({
                     {links.length} {L.active}
                   </Text>
                 </View>
-                <TouchableOpacity
-                  style={styles.headerAddButton}
-                  activeOpacity={0.8}
-                  accessibilityRole="button"
-                  accessibilityLabel={L.addPatient}
-                  onPress={() => navigation.navigate('LinkPatient')}
-                >
-                  <Ionicons name="add" size={15} color="#FFFFFF" />
-                  <Text style={styles.headerAddButtonText}>{L.addPatient}</Text>
-                </TouchableOpacity>
               </View>
               {links.map((link) => {
                 const queue =
@@ -442,28 +464,7 @@ export default function CaregiverDashboard({
                   </View>
                 );
               })}
-              <TouchableOpacity
-                style={styles.emptyAddCard}
-                onPress={() =>
-                  navigation.navigate(
-                    'LinkPatient'
-                  )
-                }
-              >
-                <View style={styles.addCircle}>
-                  <Ionicons
-                    name="add"
-                    size={21}
-                    color="#155EEF"
-                  />
-                </View>
-                <Text style={styles.addTitle}>
-                  {L.addPatientCaps}
-                </Text>
-                <Text style={styles.addSubtitle}>
-                  {L.addPatientHint}
-                </Text>
-              </TouchableOpacity>
+
             </>
           )}
         </ScrollView>
@@ -491,6 +492,62 @@ export default function CaregiverDashboard({
   );
 }
 const styles = StyleSheet.create({
+  quickAccessSection: {
+    marginTop: 17,
+    marginBottom: 0
+  },
+  quickAccessHeading: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    color: '#64748B',
+    marginBottom: 7
+  },
+  quickAccessRow: {
+    flexDirection: 'row',
+    gap: 8
+  },
+  quickAccessButton: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 44,
+    paddingHorizontal: 9,
+    paddingVertical: 7,
+    borderRadius: 9,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  quickAddButton: {
+    backgroundColor: '#155EEF'
+  },
+  quickWaitingButton: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#BFD3FF'
+  },
+  quickIconCircleAdd: {
+    marginRight: 7
+  },
+  quickIconCircleWaiting: {
+    marginRight: 7
+  },
+  quickAddText: {
+    fontSize: 10,
+    lineHeight: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    flexShrink: 1
+  },
+  quickWaitingText: {
+    fontSize: 10,
+    lineHeight: 13,
+    fontWeight: '700',
+    color: '#155EEF',
+    textAlign: 'center',
+    flexShrink: 1
+  },
   outer: {
     flex: 1,
     backgroundColor: '#EDF1F5'
