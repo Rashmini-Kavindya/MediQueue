@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   listWaitingAreasAdmin, createWaitingAreaAdmin,
   updateWaitingAreaAdmin, deleteWaitingAreaAdmin
@@ -16,6 +17,7 @@ const BLANK = { name: '', type: 'lobby', location: '', nearbyLandmark: '', seati
 const apiMessage = (e) => e?.response?.data?.message || e?.message || 'Something went wrong.';
 
 export default function WaitingAreaManagement({ navigation }) {
+  const safeInsets = useSafeAreaInsets();
   const [areas, setAreas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -119,7 +121,7 @@ export default function WaitingAreaManagement({ navigation }) {
   );
 
   return (
-    <View style={styles.outer}>
+    <SafeAreaView style={styles.outer} edges={['top', 'bottom']}>
       <View style={styles.screen}>
         <View style={styles.topbar}>
           <TouchableOpacity accessibilityLabel="Open menu" onPress={() => navigation.openDrawer()} style={styles.topIcon}>
@@ -187,7 +189,7 @@ export default function WaitingAreaManagement({ navigation }) {
           }
         </ScrollView>
         <Modal visible={!!modal} transparent animationType="fade" onRequestClose={close}>
-          <View style={styles.scrim}>
+          <View style={[styles.scrim, { paddingTop: Math.max(16, safeInsets.top + 8), paddingBottom: Math.max(16, safeInsets.bottom + 8) }]}>
             <View style={styles.modalBox}>
               <View style={styles.modalHead}>
                 <Text style={styles.modalTitle}>{modal === 'delete' ? 'Delete Waiting Area?' : selected ? 'Edit Waiting Area' : 'Add Waiting Area'}</Text>
@@ -225,7 +227,7 @@ export default function WaitingAreaManagement({ navigation }) {
           </View>
         </Modal>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
