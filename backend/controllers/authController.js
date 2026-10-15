@@ -14,14 +14,18 @@ const VERIFY_REQUIRED_ROLES = ['patient', 'caregiver'];
 // +94771234567 / 077 123 4567 -> 0771234567
 const cleanPhoneNumber = (num) => {
   if (!num) return '';
-  let cleaned = String(num).replace(/[\s-]/g, '');
-  if (cleaned.startsWith('+94')) cleaned = '0' + cleaned.slice(3);
+  const cleaned = String(num).replace(/[\s()-]/g, '');
+  if (/^\+?947\d{8}$/.test(cleaned)) return `0${cleaned.replace(/^\+?94/, '')}`;
   return cleaned;
 };
-// Raw + cleaned versions of a phone number, for matching
+// Match local/international spellings of the same Sri Lankan phone number.
 const phoneVariants = (phone) => {
-  const raw = String(phone).trim();
-  return [...new Set([raw, cleanPhoneNumber(phone)])];
+  const raw = String(phone || '').trim();
+  const cleaned = cleanPhoneNumber(raw);
+  return [...new Set([
+    raw, cleaned,
+    ...(/^07\d{8}$/.test(cleaned) ? [`94${cleaned.slice(1)}`, `+94${cleaned.slice(1)}`] : [])
+  ])];
 };
 // Phone first, then email. Same lookup is used by send-otp, verify-otp and reset-password
 const findUserByContact = async ({ phone, email }) => {
@@ -84,6 +88,10 @@ exports.register = async (req, res) => {
     const { firstName, lastName, email, phone, nic, nicOrPatientId, password, role, language } = req.body;
     const nicValue = String(nic || nicOrPatientId || '').trim().toUpperCase() || undefined;
     const emailValue = email ? String(email).trim().toLowerCase() : undefined;
+    // Public registration must never mint staff/admin privileges.
+    if (role && !VERIFY_REQUIRED_ROLES.includes(role)) {
+      return res.status(403).json({ success: false, message: 'Staff and Admin accounts are created by an authorized administrator.' });
+    }
     if (!firstName || !phone) {
       return res.status(400).json({ success: false, message: 'Name and phone number are required' });
     }
@@ -103,6 +111,10 @@ exports.register = async (req, res) => {
     if (existing) {
       // Never re-register or overwrite an inactive account, even if OTP was never verified.
       if (isDeactivated(existing)) return rejectDeactivated(res);
+      // Hospital-created records are not open to public overwrite, even if no OTP was used.
+      if (existing.adminProvisioned) {
+        return res.status(409).json({ success: false, message: 'This record already exists. Contact the hospital to update your registration.' });
+      }
       // Registered earlier but never verified -> refresh details, app continues to OTP step
       if (!isUserVerified(existing) && VERIFY_REQUIRED_ROLES.includes(existing.role)) {
         // New email must not belong to some other account
