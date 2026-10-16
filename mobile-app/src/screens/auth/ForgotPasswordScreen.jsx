@@ -15,6 +15,15 @@ import AuthField from '../../components/AuthField';
 const MIN_PASSWORD_LENGTH = 6;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const COLORS = {
+  error: '#DC2626',
+  valid: '#16A34A',
+  weak: '#EF4444',
+  fair: '#F59E0B',
+  strong: '#16A34A',
+  track: '#E2E8F0',
+};
+
 // +94771234567 / 94771234567 / 771234567 / 077 123 4567 -> 0771234567
 // (backend stores phone numbers in the 07XXXXXXXX format)
 const normalizePhone = (input) => {
@@ -24,6 +33,73 @@ const normalizePhone = (input) => {
   else if (/^7\d{8}$/.test(p)) p = '0' + p;
   return p;
 };
+
+/* ------------------------------------------------------------------ */
+/* Small UI helpers (no business logic)                                */
+/* ------------------------------------------------------------------ */
+
+// Message shown under a field: red error or green "looks good"
+function FieldFeedback({ status, message }) {
+  if (status !== 'error' && status !== 'valid') return null;
+
+  const color = status === 'error' ? COLORS.error : COLORS.valid;
+  const icon = status === 'error' ? 'alert-circle' : 'checkmark-circle';
+
+  return (
+    <View className="flex-row items-center mt-1.5 px-1">
+      <Ionicons name={icon} size={14} color={color} />
+      <Text className="text-xs ml-1.5 flex-1" style={{ color }}>
+        {message}
+      </Text>
+    </View>
+  );
+}
+
+// 3-segment password strength meter
+function PasswordStrength({ password, t }) {
+  if (!password) return null;
+
+  let score = 0;
+  if (password.length >= MIN_PASSWORD_LENGTH) score += 1;
+  if (password.length >= 8) score += 1;
+  if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score += 1;
+  if (/\d/.test(password)) score += 1;
+  if (/[^A-Za-z0-9]/.test(password)) score += 1;
+
+  let level = 1;
+  let label = t('strength_weak', 'Weak');
+  let color = COLORS.weak;
+  if (password.length >= MIN_PASSWORD_LENGTH) {
+    if (score >= 4) {
+      level = 3;
+      label = t('strength_strong', 'Strong');
+      color = COLORS.strong;
+    } else if (score >= 3) {
+      level = 2;
+      label = t('strength_fair', 'Fair');
+      color = COLORS.fair;
+    }
+  }
+
+  return (
+    <View className="flex-row items-center mt-2 px-1">
+      <View className="flex-row flex-1">
+        {[1, 2, 3].map((i) => (
+          <View
+            key={i}
+            className="flex-1 h-1.5 rounded-full mr-1.5"
+            style={{ backgroundColor: i <= level ? color : COLORS.track }}
+          />
+        ))}
+      </View>
+      <Text className="text-xs font-semibold ml-2" style={{ color }}>
+        {label}
+      </Text>
+    </View>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 
 // Step 1: choose phone or email, enter it -> code is sent there (SMS or email).
 // Step 2: enter the code + new password.
@@ -42,9 +118,99 @@ export default function ForgotPasswordScreen({ navigation, route }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // UI only: which fields the user has started typing in
+  const [touched, setTouched] = useState({});
+
+  const markTouched = (key) =>
+    setTouched((prev) => (prev[key] ? prev : { ...prev, [key]: true }));
+
+  const onChangePhone = (v) => { setPhone(v); markTouched('phone'); };
+  const onChangeEmail = (v) => { setEmail(v); markTouched('email'); };
+  const onChangeOtp = (v) => { setOtp(v.replace(/\D/g, '')); markTouched('otp'); };
+  const onChangeNewPassword = (v) => { setNewPassword(v); markTouched('newPassword'); };
+  const onChangeConfirm = (v) => { setConfirmPassword(v); markTouched('confirm'); };
+
   const isPhone = method === 'phone';
   const cleanPhone = normalizePhone(phone);
   const cleanEmail = email.trim().toLowerCase();
+
+  /* ---------------- Live validation (derived, display only) ---------------- */
+
+  const submitAttempted = !!error;
+  const requiredMsg = t('field_required', 'This field is required');
+
+  let phoneState = { status: 'idle' };
+  if (!phone.trim()) {
+    if (touched.phone || submitAttempted) {
+      phoneState = { status: 'error', message: requiredMsg };
+    }
+  } else if (!/^\d{9,15}$/.test(cleanPhone)) {
+    phoneState = {
+      status: 'error',
+      message: t('invalid_phone', 'Please enter a valid phone number'),
+    };
+  } else {
+    phoneState = { status: 'valid', message: t('looks_good', 'Looks good') };
+  }
+
+  let emailState = { status: 'idle' };
+  if (!email.trim()) {
+    if (touched.email || submitAttempted) {
+      emailState = { status: 'error', message: requiredMsg };
+    }
+  } else if (!EMAIL_REGEX.test(cleanEmail)) {
+    emailState = {
+      status: 'error',
+      message: t('invalid_email', 'Please enter a valid email address'),
+    };
+  } else {
+    emailState = { status: 'valid', message: t('looks_good', 'Looks good') };
+  }
+
+  let otpState = { status: 'idle' };
+  if (!otp) {
+    if (touched.otp || submitAttempted) {
+      otpState = { status: 'error', message: requiredMsg };
+    }
+  } else if (otp.length < 6) {
+    otpState = {
+      status: 'error',
+      message: t('enter_valid_code', 'Please enter a valid 6-digit verification code.'),
+    };
+  } else {
+    otpState = { status: 'valid', message: t('looks_good', 'Looks good') };
+  }
+
+  let newPasswordState = { status: 'idle' };
+  if (!newPassword) {
+    if (touched.newPassword || submitAttempted) {
+      newPasswordState = { status: 'error', message: requiredMsg };
+    }
+  } else if (newPassword.length < MIN_PASSWORD_LENGTH) {
+    newPasswordState = {
+      status: 'error',
+      message: t('password_min', 'Password must be at least 6 characters'),
+    };
+  } else {
+    newPasswordState = { status: 'valid', message: t('looks_good', 'Looks good') };
+  }
+
+  let confirmState = { status: 'idle' };
+  if (!confirmPassword) {
+    if (touched.confirm || submitAttempted) {
+      confirmState = { status: 'error', message: requiredMsg };
+    }
+  } else if (confirmPassword !== newPassword) {
+    confirmState = {
+      status: 'error',
+      message: t('passwords_dont_match', 'Passwords do not match'),
+    };
+  } else {
+    confirmState = {
+      status: 'valid',
+      message: t('passwords_match', 'Passwords match'),
+    };
+  }
 
   const chooseMethod = (m) => {
     if (m === method) return;
@@ -229,27 +395,33 @@ export default function ForgotPasswordScreen({ navigation, route }) {
             </View>
 
             {isPhone ? (
-              <AuthField
-                label={t('phone_number', 'Phone number')}
-                hint={t('code_by_sms', 'We will send the code by SMS')}
-                icon="call-outline"
-                placeholder={t('phone_ph', 'Enter your phone number')}
-                keyboardType="phone-pad"
-                value={phone}
-                onChangeText={setPhone}
-              />
+              <View>
+                <AuthField
+                  label={t('phone_number', 'Phone number')}
+                  hint={t('code_by_sms', 'We will send the code by SMS')}
+                  icon="call-outline"
+                  placeholder={t('phone_ph', 'Enter your phone number')}
+                  keyboardType="phone-pad"
+                  value={phone}
+                  onChangeText={onChangePhone}
+                />
+                <FieldFeedback status={phoneState.status} message={phoneState.message} />
+              </View>
             ) : (
-              <AuthField
-                label={t('email_address', 'Email address')}
-                hint={t('code_by_email', 'We will send the code to this email')}
-                icon="mail-outline"
-                placeholder="name@example.com"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                value={email}
-                onChangeText={setEmail}
-              />
+              <View>
+                <AuthField
+                  label={t('email_address', 'Email address')}
+                  hint={t('code_by_email', 'We will send the code to this email')}
+                  icon="mail-outline"
+                  placeholder="name@example.com"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  value={email}
+                  onChangeText={onChangeEmail}
+                />
+                <FieldFeedback status={emailState.status} message={emailState.message} />
+              </View>
             )}
           </View>
         ) : (
@@ -264,31 +436,43 @@ export default function ForgotPasswordScreen({ navigation, route }) {
               </View>
             )}
 
-            <AuthField
-              label={t('otp_label', 'Verification code')}
-              icon="shield-checkmark-outline"
-              placeholder={t('otp_ph', '6-digit code')}
-              keyboardType="number-pad"
-              maxLength={6}
-              value={otp}
-              onChangeText={(v) => setOtp(v.replace(/\D/g, ''))}
-            />
-            <AuthField
-              label={t('new_password', 'New password')}
-              icon="lock-closed-outline"
-              placeholder={t('new_password_ph', 'Enter new password')}
-              isPassword
-              value={newPassword}
-              onChangeText={setNewPassword}
-            />
-            <AuthField
-              label={t('confirm_password', 'Confirm password')}
-              icon="lock-closed-outline"
-              placeholder={t('confirm_password_ph', 'Re-enter your password')}
-              isPassword
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-            />
+            <View>
+              <AuthField
+                label={t('otp_label', 'Verification code')}
+                icon="shield-checkmark-outline"
+                placeholder={t('otp_ph', '6-digit code')}
+                keyboardType="number-pad"
+                maxLength={6}
+                value={otp}
+                onChangeText={onChangeOtp}
+              />
+              <FieldFeedback status={otpState.status} message={otpState.message} />
+            </View>
+
+            <View>
+              <AuthField
+                label={t('new_password', 'New password')}
+                icon="lock-closed-outline"
+                placeholder={t('new_password_ph', 'Enter new password')}
+                isPassword
+                value={newPassword}
+                onChangeText={onChangeNewPassword}
+              />
+              <PasswordStrength password={newPassword} t={t} />
+              <FieldFeedback status={newPasswordState.status} message={newPasswordState.message} />
+            </View>
+
+            <View>
+              <AuthField
+                label={t('confirm_password', 'Confirm password')}
+                icon="lock-closed-outline"
+                placeholder={t('confirm_password_ph', 'Re-enter your password')}
+                isPassword
+                value={confirmPassword}
+                onChangeText={onChangeConfirm}
+              />
+              <FieldFeedback status={confirmState.status} message={confirmState.message} />
+            </View>
 
             <View className="flex-row justify-between">
               <TouchableOpacity

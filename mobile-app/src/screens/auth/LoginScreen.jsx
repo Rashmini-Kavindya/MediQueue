@@ -14,6 +14,30 @@ import { AuthContext } from '../../context/AuthContext';
 import AuthField from '../../components/AuthField';
 import GoogleButton from '../../components/GoogleButton';
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const COLORS = {
+  error: '#DC2626',
+  valid: '#16A34A',
+};
+
+// Message shown under a field: red error or green "looks good"
+function FieldFeedback({ status, message }) {
+  if (status !== 'error' && status !== 'valid') return null;
+
+  const color = status === 'error' ? COLORS.error : COLORS.valid;
+  const icon = status === 'error' ? 'alert-circle' : 'checkmark-circle';
+
+  return (
+    <View className="flex-row items-center mt-1.5 px-1">
+      <Ionicons name={icon} size={14} color={color} />
+      <Text className="text-xs ml-1.5 flex-1" style={{ color }}>
+        {message}
+      </Text>
+    </View>
+  );
+}
+
 export default function LoginScreen({ navigation, route }) {
   const { t } = useTranslation();
   const { loginWithToken } = useContext(AuthContext);
@@ -25,6 +49,40 @@ export default function LoginScreen({ navigation, route }) {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // UI only: which fields the user has started typing in
+  const [touched, setTouched] = useState({});
+
+  const markTouched = (key) =>
+    setTouched((prev) => (prev[key] ? prev : { ...prev, [key]: true }));
+
+  const onChangeIdentifier = (v) => { setIdentifier(v); markTouched('identifier'); };
+  const onChangePassword = (v) => { setPassword(v); markTouched('password'); };
+
+  /* ---------------- Live validation (derived, display only) ---------------- */
+
+  const submitAttempted = !!error;
+  const requiredMsg = t('field_required', 'This field is required');
+
+  let identifierState = { status: 'idle' };
+  if (!identifier.trim()) {
+    if (touched.identifier || submitAttempted) {
+      identifierState = { status: 'error', message: requiredMsg };
+    }
+  } else if (identifier.includes('@') && !EMAIL_REGEX.test(identifier.trim())) {
+    identifierState = {
+      status: 'error',
+      message: t('invalid_email', 'Please enter a valid email address'),
+    };
+  } else {
+    identifierState = { status: 'valid', message: t('looks_good', 'Looks good') };
+  }
+
+  // Password: only "required" is checked at login (existing accounts may have any length)
+  let passwordState = { status: 'idle' };
+  if (!password && (touched.password || submitAttempted)) {
+    passwordState = { status: 'error', message: requiredMsg };
+  }
 
   const handleLogin = async () => {
     setError('');
@@ -108,23 +166,30 @@ export default function LoginScreen({ navigation, route }) {
 
         {/* Inputs */}
         <View className="gap-4">
-          <AuthField
-            label={t('login_identifier', 'Email / NIC / Phone')}
-            icon="person-outline"
-            placeholder={t('login_identifier_ph', 'Enter your email, NIC or phone number')}
-            autoCapitalize="none"
-            autoCorrect={false}
-            value={identifier}
-            onChangeText={setIdentifier}
-          />
-          <AuthField
-            label={t('password', 'Password')}
-            icon="lock-closed-outline"
-            placeholder={t('password_ph', 'Enter your password')}
-            isPassword
-            value={password}
-            onChangeText={setPassword}
-          />
+          <View>
+            <AuthField
+              label={t('login_identifier', 'Email / NIC / Phone')}
+              icon="person-outline"
+              placeholder={t('login_identifier_ph', 'Enter your email, NIC or phone number')}
+              autoCapitalize="none"
+              autoCorrect={false}
+              value={identifier}
+              onChangeText={onChangeIdentifier}
+            />
+            <FieldFeedback status={identifierState.status} message={identifierState.message} />
+          </View>
+
+          <View>
+            <AuthField
+              label={t('password', 'Password')}
+              icon="lock-closed-outline"
+              placeholder={t('password_ph', 'Enter your password')}
+              isPassword
+              value={password}
+              onChangeText={onChangePassword}
+            />
+            <FieldFeedback status={passwordState.status} message={passwordState.message} />
+          </View>
         </View>
 
         {/* Forgot password */}
