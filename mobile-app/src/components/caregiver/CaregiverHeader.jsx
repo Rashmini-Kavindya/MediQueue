@@ -11,6 +11,15 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+// iOS system colors (same palette as the patient screens)
+const IOS = {
+  blue: '#007AFF',
+  label: '#1C1C1E',
+  fill: '#EFEFF4',
+  secondaryLabel: '#636366',
+  white: '#FFFFFF'
+};
+
 
 export default function CaregiverHeader({
   title,
@@ -49,8 +58,8 @@ export default function CaregiverHeader({
             >
               <Ionicons
                 name="chevron-back"
-                size={19}
-                color="#334155"
+                size={22}
+                color={IOS.blue}
               />
             </TouchableOpacity>
           )}
@@ -69,7 +78,10 @@ export default function CaregiverHeader({
               MEDIQUEUE
             </Text>
 
-            <Text style={styles.pageTitle}>
+            <Text
+              style={styles.pageTitle}
+              numberOfLines={1}
+            >
               {title}
             </Text>
 
@@ -87,7 +99,7 @@ export default function CaregiverHeader({
         >
           <Ionicons
             name="person-outline"
-            size={16}
+            size={18}
             color="#FFFFFF"
           />
         </TouchableOpacity>
@@ -100,22 +112,22 @@ export default function CaregiverHeader({
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: '#FFFFFF'
+    backgroundColor: IOS.white
   },
 
   header: {
-    height: 58,
+    height: 62,
 
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
 
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
 
-    backgroundColor: '#FFFFFF',
+    backgroundColor: IOS.white,
 
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEF0F4'
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(60,60,67,0.18)'
   },
 
   leftSide: {
@@ -126,57 +138,71 @@ const styles = StyleSheet.create({
   },
 
   backButton: {
-    width: 25,
-    height: 34,
+    width: 36,
+    height: 36,
+    marginRight: 8,
 
-    justifyContent: 'center'
+    borderRadius: 18,
+
+    alignItems: 'center',
+    justifyContent: 'center',
+
+    backgroundColor: IOS.fill
   },
 
   logo: {
-    width: 27,
-    height: 27,
+    width: 34,
+    height: 34,
 
-    maxWidth: 27,
-    maxHeight: 27,
+    maxWidth: 34,
+    maxHeight: 34,
 
-    marginRight: 7
+    marginRight: 10
   },
 
   brandText: {
+    flex: 1,
     justifyContent: 'center'
   },
 
   brandName: {
-    fontSize: 7,
-    lineHeight: 9,
+    fontSize: 10,
+    lineHeight: 12,
 
-    fontWeight: '800',
+    fontWeight: '700',
 
     letterSpacing: 0.8,
 
-    color: '#155EEF'
+    color: IOS.blue
   },
 
   pageTitle: {
     marginTop: 1,
 
-    fontSize: 13,
-    lineHeight: 16,
+    fontSize: 17,
+    lineHeight: 21,
 
-    fontWeight: '800',
+    fontWeight: '700',
+    letterSpacing: -0.2,
 
-    color: '#111827'
+    color: IOS.label
   },
 
   profileButton: {
-    width: 31,
-    height: 31,
+    width: 38,
+    height: 38,
 
-    borderRadius: 16,
+    borderRadius: 19,
 
     alignItems: 'center',
     justifyContent: 'center',
 
-    backgroundColor: '#0757D8'
+    backgroundColor: IOS.blue,
+
+    shadowColor: IOS.blue,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.28,
+    shadowRadius: 8,
+    elevation: 3
   }
 });

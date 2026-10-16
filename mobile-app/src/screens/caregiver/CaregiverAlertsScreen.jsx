@@ -21,6 +21,19 @@ import {
   getUserPreferences
 } from '../../services/caregiverApi';
 
+// iOS system colors (same palette as the patient screens)
+const IOS = {
+  blue: '#007AFF',
+  blueSoft: 'rgba(0,122,255,0.10)',
+  red: '#FF3B30',
+  label: '#1C1C1E',
+  secondaryLabel: '#636366',
+  tertiaryLabel: '#8E8E93',
+  fill: '#EFEFF4',
+  groupedBg: '#F2F2F7',
+  white: '#FFFFFF'
+};
+
 const QUEUE_TYPES = new Set([
   'near', 'called', 'QUEUE_UPDATE', 'YOUR_TURN', 'TURN_NEAR'
 ]);
@@ -201,12 +214,12 @@ export default function CaregiverAlertsScreen({ navigation }) {
 
           {loading ? (
             <View style={styles.loading}>
-              <ActivityIndicator size="large" color="#155EEF" />
+              <ActivityIndicator size="large" color={IOS.tertiaryLabel} />
             </View>
           ) : visibleNotifications.length === 0 ? (
             <View style={styles.emptyCard}>
               <View style={styles.emptyIcon}>
-                <Ionicons name="notifications-outline" size={25} color="#155EEF" />
+                <Ionicons name="notifications-outline" size={28} color={IOS.blue} />
               </View>
               <Text style={styles.emptyTitle}>{L.noAlerts}</Text>
               <Text style={styles.emptyText}>
@@ -224,8 +237,8 @@ export default function CaregiverAlertsScreen({ navigation }) {
                 <View style={styles.notificationIcon}>
                   <Ionicons
                     name={getIcon(notification)}
-                    size={18}
-                    color="#155EEF"
+                    size={20}
+                    color={IOS.blue}
                   />
                 </View>
 
@@ -267,85 +280,97 @@ export default function CaregiverAlertsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  outer: { flex: 1, backgroundColor: '#EEF1F5' },
+  outer: { flex: 1, backgroundColor: IOS.groupedBg },
   screen: {
     flex: 1, width: '100%', maxWidth: 430,
-    alignSelf: 'center', backgroundColor: '#F8F7FC'
+    alignSelf: 'center', backgroundColor: IOS.groupedBg
   },
   scroll: { flex: 1 },
-  content: { padding: 18, paddingBottom: 30 },
-  pageTitle: { fontSize: 20, fontWeight: '800', color: '#111827' },
+  content: { padding: 16, paddingBottom: 30 },
+  pageTitle: {
+    fontSize: 28, fontWeight: '700', letterSpacing: 0.3,
+    color: IOS.label, paddingHorizontal: 4
+  },
   pageSubtitle: {
-    marginTop: 4, fontSize: 11, lineHeight: 17,
-    color: '#64748B'
+    marginTop: 4, fontSize: 14, lineHeight: 20,
+    color: IOS.tertiaryLabel, paddingHorizontal: 4
   },
   filterRow: {
-    flexDirection: 'row', marginTop: 18, marginBottom: 15
+    flexDirection: 'row', marginTop: 18, marginBottom: 16
   },
   activeFilter: {
-    paddingHorizontal: 14, paddingVertical: 7,
-    borderRadius: 18, backgroundColor: '#155EEF', marginRight: 7
+    paddingHorizontal: 16, paddingVertical: 8,
+    borderRadius: 999, backgroundColor: IOS.blue, marginRight: 8
   },
-  activeFilterText: { color: '#FFFFFF', fontSize: 10, fontWeight: '700' },
+  activeFilterText: { color: '#FFFFFF', fontSize: 13, fontWeight: '600' },
   filter: {
-    paddingHorizontal: 14, paddingVertical: 7, borderRadius: 18,
-    backgroundColor: '#FFFFFF', borderWidth: 1,
-    borderColor: '#E2E8F0', marginRight: 7
+    paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999,
+    backgroundColor: IOS.fill, marginRight: 8
   },
-  filterText: { color: '#64748B', fontSize: 10, fontWeight: '600' },
+  filterText: { color: IOS.secondaryLabel, fontSize: 13, fontWeight: '500' },
   loading: { paddingVertical: 80 },
   errorText: {
-    color: '#B42318', marginBottom: 12,
-    fontSize: 12, lineHeight: 18
+    color: IOS.red, marginBottom: 12,
+    fontSize: 13, lineHeight: 18, paddingHorizontal: 4
   },
   emptyCard: {
-    marginTop: 15, paddingVertical: 34, paddingHorizontal: 25,
-    alignItems: 'center', backgroundColor: '#FFFFFF',
-    borderRadius: 17, borderWidth: 1, borderColor: '#E2E8F0'
+    marginTop: 12, paddingVertical: 36, paddingHorizontal: 24,
+    alignItems: 'center', backgroundColor: IOS.white,
+    borderRadius: 26, borderCurve: 'continuous',
+    borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(60,60,67,0.12)',
+    shadowColor: '#0B1B3A', shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.07, shadowRadius: 16, elevation: 2
   },
   emptyIcon: {
-    width: 48, height: 48, borderRadius: 24,
+    width: 64, height: 64, borderRadius: 32,
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#EEF4FF'
+    backgroundColor: IOS.blueSoft
   },
   emptyTitle: {
-    marginTop: 13, fontSize: 15,
-    fontWeight: '800', color: '#111827'
+    marginTop: 14, fontSize: 17,
+    fontWeight: '600', color: IOS.label
   },
   emptyText: {
-    marginTop: 6, color: '#64748B',
-    fontSize: 11, lineHeight: 17, textAlign: 'center'
+    marginTop: 6, color: IOS.tertiaryLabel,
+    fontSize: 14, lineHeight: 20, textAlign: 'center'
   },
   notificationCard: {
-    flexDirection: 'row', padding: 14, marginBottom: 10,
-    borderRadius: 14, backgroundColor: '#FFFFFF',
-    borderWidth: 1, borderColor: '#E6EAF0'
+    flexDirection: 'row', padding: 14, marginBottom: 12,
+    borderRadius: 22, borderCurve: 'continuous', backgroundColor: IOS.white,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(60,60,67,0.12)',
+    shadowColor: '#0B1B3A', shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.07, shadowRadius: 16, elevation: 2
   },
   unreadCard: {
-    flexDirection: 'row', padding: 14, marginBottom: 10,
-    borderRadius: 14, backgroundColor: '#F5F8FF',
-    borderWidth: 1, borderColor: '#C9D8FF'
+    flexDirection: 'row', padding: 14, marginBottom: 12,
+    borderRadius: 22, borderCurve: 'continuous', backgroundColor: '#F5F9FF',
+    borderWidth: 1, borderColor: 'rgba(0,122,255,0.28)',
+    shadowColor: '#0B1B3A', shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.07, shadowRadius: 16, elevation: 2
   },
   notificationIcon: {
-    width: 36, height: 36, borderRadius: 10,
+    width: 42, height: 42, borderRadius: 13, borderCurve: 'continuous',
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#EAF1FF'
+    backgroundColor: IOS.blueSoft
   },
-  notificationBody: { flex: 1, marginLeft: 11 },
+  notificationBody: { flex: 1, marginLeft: 12 },
   notificationTop: {
     flexDirection: 'row', alignItems: 'center',
     justifyContent: 'space-between'
   },
-  notificationTitle: { flex: 1, color: '#111827', fontSize: 12, fontWeight: '800' },
+  notificationTitle: {
+    flex: 1, color: IOS.label, fontSize: 15,
+    fontWeight: '600', letterSpacing: -0.2
+  },
   unreadDot: {
-    width: 7, height: 7, borderRadius: 4,
-    backgroundColor: '#155EEF', marginLeft: 8
+    width: 8, height: 8, borderRadius: 4,
+    backgroundColor: IOS.blue, marginLeft: 8
   },
   patientLabel: {
-    marginTop: 4, color: '#155EEF', fontSize: 10, fontWeight: '700'
+    marginTop: 4, color: IOS.blue, fontSize: 12, fontWeight: '600'
   },
   notificationMessage: {
-    marginTop: 5, color: '#475569', fontSize: 10, lineHeight: 16
+    marginTop: 5, color: IOS.secondaryLabel, fontSize: 13, lineHeight: 19
   },
-  notificationTime: { marginTop: 7, color: '#94A3B8', fontSize: 8 }
+  notificationTime: { marginTop: 8, color: IOS.tertiaryLabel, fontSize: 11 }
 });
