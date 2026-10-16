@@ -331,9 +331,9 @@ export default function QueueScreen() {
   );
 
   // Reusable token row. Actions are shown only for active tokens.
-  const renderTokenRow = (token, showActions = true) => (
+  const renderTokenRow = (token, showActions = true, index = 0) => (
     <View
-      key={token.tokenId}
+      key={`${token.tokenId || token.tokenNo || 'token'}-${index}`}
       className="flex-row items-center px-4 py-3.5 border-b border-slate-100"
     >
       <View className="flex-1">
@@ -412,12 +412,12 @@ export default function QueueScreen() {
               horizontal
               showsHorizontalScrollIndicator={false}
             >
-              {opds.map((opd) => {
+              {opds.map((opd, opdIndex) => {
                 const selected = opd.opdId === selectedOpdId;
 
                 return (
                   <TouchableOpacity
-                    key={opd.opdId}
+                    key={opd.opdId || `opd-${opdIndex}`}
                     activeOpacity={0.8}
                     onPress={() => setSelectedOpdId(opd.opdId)}
                     className={`mr-2 px-3 py-2.5 rounded-xl border ${
@@ -673,7 +673,7 @@ export default function QueueScreen() {
               No active patients in this queue.
             </Text>
           ) : (
-            activeTokens.map((token) => renderTokenRow(token, true))
+            activeTokens.map((token, index) => renderTokenRow(token, true, index))
           )}
         </View>
 
@@ -720,7 +720,7 @@ export default function QueueScreen() {
               No completed or skipped tokens yet.
             </Text>
           ) : (
-            finishedTokens.map((token) => renderTokenRow(token, false))
+            finishedTokens.map((token, index) => renderTokenRow(token, false, index))
           )}
         </View>
 
