@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
+const OPD = require('./models/OPD');
 require('dotenv').config();
 const queueRoutes = require('./routes/queueRoutes'); // Import the queueRoutes configuration
 
@@ -69,7 +70,16 @@ app.get('/api/health', (req, res) => {
 });
 
 // Socket.io Listener
-io.on('connection', (socket) => {
+io.on('connection', async (socket) => {
+  const requestedOpdId = socket.handshake.auth?.opdId;
+  if (requestedOpdId) {
+    try {
+      const activeOpd = await OPD.exists({ opdId: requestedOpdId, status: 'active' });
+      if (activeOpd) socket.join(`opd:${requestedOpdId}`);
+    } catch (error) {
+      console.error('OPD socket subscription failed:', error.message);
+    }
+  }
   console.log('⚡ Client connected:', socket.id);
   socket.on('disconnect', () => {
     console.log('🔥 Client disconnected:', socket.id);

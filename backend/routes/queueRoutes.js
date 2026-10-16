@@ -13,7 +13,7 @@ const {
 
 // ---- Patient / any logged-in user ----
 router.get('/my-status', verifyToken, getMyQueueStatus);
-router.get('/live/:opdId', verifyToken, getLiveQueue);
+router.get('/live/:opdId', getLiveQueue);
 
 // ---- Staff / admin ----
 router.post('/call-next', verifyToken, roleGuard(['staff', 'admin']), callNext);

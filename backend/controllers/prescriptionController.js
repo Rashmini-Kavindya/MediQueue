@@ -33,11 +33,11 @@ exports.createPrescription = async (req, res) => {
       });
     }
 
-    // Prescription can only be created during an active consultation.
-    if (!consultation.startedAt || consultation.endedAt) {
+    // A prescription is allowed only after the consultation lifecycle is complete.
+    if (!consultation.startedAt || !consultation.endedAt) {
       return res.status(400).json({
         success: false,
-        message: 'Prescription can only be added during an active consultation'
+        message: 'Prescription can only be added after the consultation is completed'
       });
     }
 
@@ -70,6 +70,13 @@ exports.createPrescription = async (req, res) => {
 
   } catch (error) {
     console.error('Create prescription error:', error);
+
+    if (error.code === 11000 && error.keyPattern?.consultationId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Prescription already exists for this consultation'
+      });
+    }
 
     return res.status(500).json({
       success: false,
@@ -133,5 +140,3 @@ exports.getPrescriptionByConsultation = async (req, res) => {
     });
   }
 };
-//in-consultation → prescription allowed
-//completed → prescription rejected 
