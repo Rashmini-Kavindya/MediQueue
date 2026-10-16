@@ -73,7 +73,8 @@ export default function TokenConfirmationScreen({ route, navigation }) {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F8F9FE]">
+    // NOTE: className is NOT used on SafeAreaView (third-party component) -> use style instead
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#F8F9FE' }}>
       {/* Header */}
       <View className="flex-row items-center justify-between px-5 py-4 bg-white border-b border-slate-100">
         <Text className="text-lg font-bold text-slate-800">
@@ -84,14 +85,17 @@ export default function TokenConfirmationScreen({ route, navigation }) {
 
       <View className="flex-1 px-6 pt-6 justify-center">
         {loading ? (
-          <View className="items-center py-12">
+          <View key="loading-view" className="items-center py-12">
             <ActivityIndicator size="large" color="#0052CC" />
             <Text className="text-slate-500 font-medium text-sm mt-4">
               {t('generating_token', 'Generating your queue token...')}
             </Text>
           </View>
         ) : errorMsg ? (
-          <View className="bg-white p-6 rounded-3xl border border-red-100 items-center shadow-sm">
+          <View
+            key="error-view"
+            className="bg-white p-6 rounded-3xl border border-red-100 items-center"
+          >
             <View className="w-16 h-16 bg-red-50 rounded-full justify-center items-center mb-4">
               <Ionicons name="alert-circle-outline" size={36} color="#EF4444" />
             </View>
@@ -105,14 +109,18 @@ export default function TokenConfirmationScreen({ route, navigation }) {
               onPress={bookToken}
               className="bg-[#0052CC] px-6 py-3 rounded-xl flex-row items-center"
             >
-              <Ionicons name="refresh" size={18} color="#FFFFFF" className="mr-2" />
+              <Ionicons name="refresh" size={18} color="#FFFFFF" />
               <Text className="text-white font-bold text-sm ml-2">Try Again</Text>
             </TouchableOpacity>
           </View>
         ) : (
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
+          <ScrollView
+            key="success-view"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 20 }}
+          >
             {/* Success Card */}
-            <View className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm items-center mb-6">
+            <View className="bg-white rounded-3xl p-6 border border-slate-100 items-center mb-6">
               <View className="w-16 h-16 bg-emerald-50 rounded-2xl justify-center items-center mb-4">
                 <Ionicons name="checkmark-circle" size={36} color="#10B981" />
               </View>
@@ -122,36 +130,36 @@ export default function TokenConfirmationScreen({ route, navigation }) {
               </Text>
 
               <Text className="text-slate-500 text-xs mb-1">{opdName || 'OPD Queue'}</Text>
-              
+
               {/* Token Number Display */}
               <Text className="text-5xl font-black text-slate-900 my-2 tracking-tight">
                 {tokenData?.tokenNo}
               </Text>
 
               {/* Details List */}
-              <View className="w-full bg-slate-50 rounded-2xl p-4 mt-4 space-y-3">
-                <View className="flex-row justify-between items-center py-1">
+              <View className="w-full bg-slate-50 rounded-2xl p-4 mt-4">
+                <View className="flex-row justify-between items-center py-2">
                   <Text className="text-xs font-medium text-slate-500">Queue Position</Text>
                   <Text className="text-xs font-bold text-slate-800">
                     #{tokenData?.tokenSequence}
                   </Text>
                 </View>
 
-                <View className="flex-row justify-between items-center py-1 border-t border-slate-200/60">
+                <View className="flex-row justify-between items-center py-2 border-t border-slate-200">
                   <Text className="text-xs font-medium text-slate-500">Tracking Code</Text>
-                  <Text className="text-xs font-bold text-blue-600 font-mono">
+                  <Text className="text-xs font-bold text-blue-600">
                     {tokenData?.trackingCode}
                   </Text>
                 </View>
 
-                <View className="flex-row justify-between items-center py-1 border-t border-slate-200/60">
+                <View className="flex-row justify-between items-center py-2 border-t border-slate-200">
                   <Text className="text-xs font-medium text-slate-500">Queue Date</Text>
                   <Text className="text-xs font-bold text-slate-800">
                     {tokenData?.queueDate}
                   </Text>
                 </View>
 
-                <View className="flex-row justify-between items-center py-1 border-t border-slate-200/60">
+                <View className="flex-row justify-between items-center py-2 border-t border-slate-200">
                   <Text className="text-xs font-medium text-slate-500">Status</Text>
                   <Text className="text-xs font-bold text-amber-600 capitalize">
                     {tokenData?.status}
@@ -176,7 +184,7 @@ export default function TokenConfirmationScreen({ route, navigation }) {
           activeOpacity={0.8}
           onPress={handleFinish}
           disabled={loading}
-          className="bg-[#0052CC] py-4 rounded-xl flex-row items-center justify-center shadow-sm"
+          className="bg-[#0052CC] py-4 rounded-xl flex-row items-center justify-center"
           style={{ opacity: loading ? 0.6 : 1 }}
         >
           <Text className="text-white font-bold text-base mr-2">

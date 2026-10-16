@@ -2,6 +2,8 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import NotificationBell from '../staff/NotificationBell';
+
 
 export default function Header({ title, showBack = false, rightElement }) {
   const navigation = useNavigation();
@@ -31,17 +33,8 @@ export default function Header({ title, showBack = false, rightElement }) {
         </Text>
       </View>
 
-      {/* Dynamic Right Side Element (e.g., Notification Bell, Staff Tag, Refresh) */}
-      {rightElement ? (
-        rightElement
-      ) : (
-        <TouchableOpacity
-          onPress={() => navigation.navigate('Notifications')}
-          className="p-2 bg-slate-50 rounded-full border border-slate-100"
-        >
-          <Ionicons name="notifications-outline" size={18} color="#475569" />
-        </TouchableOpacity>
-      )}
+      {/* Dynamic Right Side Element (e.g. Staff Tag, Refresh). Default = notification bell popup */}
+      {rightElement ? rightElement : <NotificationBell />}
     </View>
   );
 }

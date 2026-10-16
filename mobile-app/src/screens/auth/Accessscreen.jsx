@@ -4,50 +4,62 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
+const softShadow = {
+  shadowColor: '#0F172A',
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.06,
+  shadowRadius: 14,
+  elevation: 3,
+};
+
 // Shown after RoleSelectScreen. `role` ('patient' | 'caregiver') is passed on to Login / Register.
 export default function AccessScreen({ navigation, route }) {
   const { t } = useTranslation();
   const role = route?.params?.role || 'patient';
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F8F9FE]">
-      <StatusBar barStyle="dark-content" backgroundColor="#F8F9FE" />
+    <SafeAreaView className="flex-1 bg-[#F2F2F7]">
+      <StatusBar barStyle="dark-content" backgroundColor="#F2F2F7" />
 
       <View className="flex-1 justify-center px-6">
 
         {/* Logo & Heading */}
-        <View className="items-center mb-8">
-          <View className="w-24 h-24 rounded-3xl bg-blue-50/60 items-center justify-center p-2 mb-3 border border-blue-100/50">
+        <View className="items-center mb-9">
+          <View
+            className="w-[120px] h-[120px] rounded-[30px] bg-white items-center justify-center mb-4"
+            style={softShadow}
+          >
             <Image
               source={require('../../../assets/logo.png')}
-              style={{ width: 72, height: 72 }}
+              style={{ width: 96, height: 96 }}
               resizeMode="contain"
             />
           </View>
 
-          <Text className="text-2xl font-bold text-slate-900 mt-3 text-center">
+          <Text className="text-[24px] font-bold text-slate-900 mt-2 text-center tracking-tight">
             {t('access_mediqueue', 'Access MediQueue')}
           </Text>
-          <Text className="text-slate-500 text-sm mt-1 text-center">
+          <Text className="text-slate-500 text-[13px] mt-1 text-center">
             {t('choose_proceed', 'Choose how you would like to proceed')}
           </Text>
         </View>
 
         {/* Action Options */}
-        <View className="gap-4">
+        <View className="gap-3.5">
 
           {/* Log In Card */}
           <TouchableOpacity
-            activeOpacity={0.7}
+            activeOpacity={0.8}
             onPress={() => navigation.navigate('Login', { role })}
-            className="flex-row items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-slate-100"
+            className="flex-row items-center justify-between bg-white p-4 rounded-[20px]"
+            style={softShadow}
           >
             <View className="flex-row items-center flex-1">
-              <View className="w-12 h-12 bg-blue-50 rounded-xl justify-center items-center mr-4">
-                <Ionicons name="log-in-outline" size={22} color="#2563EB" />
+              <View className="w-12 h-12 bg-[#E8F0FE] rounded-[16px] justify-center items-center mr-4">
+                <Ionicons name="log-in-outline" size={22} color="#0052cc" />
               </View>
               <View className="flex-1">
-                <Text className="text-base font-bold text-slate-800">
+                <Text className="text-[15px] font-semibold text-slate-900">
                   {t('log_in', 'Log In')}
                 </Text>
                 <Text className="text-xs text-slate-400 mt-0.5">
@@ -55,21 +67,22 @@ export default function AccessScreen({ navigation, route }) {
                 </Text>
               </View>
             </View>
-            <Ionicons name="arrow-forward" size={20} color="#94A3B8" />
+            <Ionicons name="chevron-forward" size={18} color="#C7C7CC" />
           </TouchableOpacity>
 
           {/* Create Account Card */}
           <TouchableOpacity
-            activeOpacity={0.7}
+            activeOpacity={0.8}
             onPress={() => navigation.navigate('Register', { role })}
-            className="flex-row items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-slate-100"
+            className="flex-row items-center justify-between bg-white p-4 rounded-[20px]"
+            style={softShadow}
           >
             <View className="flex-row items-center flex-1">
-              <View className="w-12 h-12 bg-emerald-50 rounded-xl justify-center items-center mr-4">
+              <View className="w-12 h-12 bg-[#E6F7EF] rounded-[16px] justify-center items-center mr-4">
                 <Ionicons name="person-add-outline" size={22} color="#059669" />
               </View>
               <View className="flex-1">
-                <Text className="text-base font-bold text-slate-800">
+                <Text className="text-[15px] font-semibold text-slate-900">
                   {t('create_account', 'Create Account')}
                 </Text>
                 <Text className="text-xs text-slate-400 mt-0.5">
@@ -77,18 +90,18 @@ export default function AccessScreen({ navigation, route }) {
                 </Text>
               </View>
             </View>
-            <Ionicons name="arrow-forward" size={20} color="#94A3B8" />
+            <Ionicons name="chevron-forward" size={18} color="#C7C7CC" />
           </TouchableOpacity>
 
         </View>
 
         {/* Divider */}
         <View className="flex-row items-center my-8">
-          <View className="flex-1 h-[1px] bg-slate-200" />
+          <View className="flex-1 h-[1px] bg-slate-300/70" />
           <Text className="mx-3 text-xs text-slate-400">
             {t('or_continue_with', 'or continue with')}
           </Text>
-          <View className="flex-1 h-[1px] bg-slate-200" />
+          <View className="flex-1 h-[1px] bg-slate-300/70" />
         </View>
 
         {/* Google Sign In Button */}
@@ -97,7 +110,8 @@ export default function AccessScreen({ navigation, route }) {
           onPress={() => {
             /* Google Login logic */
           }}
-          className="flex-row items-center justify-center bg-white py-3.5 px-4 rounded-xl border border-slate-200 shadow-sm"
+          className="flex-row items-center justify-center bg-white h-[52px] px-4 rounded-[16px]"
+          style={softShadow}
         >
           {/* Custom Google 'G' Icon */}
           <View className="mr-3">
@@ -109,7 +123,7 @@ export default function AccessScreen({ navigation, route }) {
               <Text className="text-[#EA4335]">e</Text>
             </Text>
           </View>
-          <Text className="text-sm font-semibold text-slate-700">
+          <Text className="text-[15px] font-semibold text-slate-800">
             {t('continue_with_google', 'Continue with Google')}
           </Text>
         </TouchableOpacity>

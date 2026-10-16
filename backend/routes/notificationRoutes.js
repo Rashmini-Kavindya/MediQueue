@@ -7,17 +7,8 @@ const { verifyToken } = require('../middleware/auth');
 router.use(verifyToken);
 
 router.get('/', notificationController.getNotifications);
-
-router.post('/', notificationController.createNotification);
-
-router.put(
-  '/:id/read',
-  notificationController.markAsRead
-);
-
-router.delete(
-  '/:id',
-  notificationController.deleteNotification
-);
+router.put('/read-all', notificationController.markAllAsRead);
+router.put('/:id/read', notificationController.markAsRead);
+router.delete('/:id', notificationController.deleteNotification);
 
 module.exports = router;
