@@ -15,6 +15,7 @@ import {
   Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 // Uses EXPO_PUBLIC_API_URL from .env (already includes /api), e.g. http://172.20.10.8:5000/api
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000/api';
@@ -56,73 +57,6 @@ const QUICK_PROMPTS = {
 const GREETING = {
   en: 'Hi! I am MediQueue AI. Describe your symptoms and I will suggest the right OPD for you.',
   si: 'ආයුබෝවන්! මම MediQueue AI. ඔබේ රෝග ලක්ෂණ කියන්න, ගැලපෙන OPD එක මම යෝජනා කරන්නම්.',
-};
-
-const T = {
-  en: {
-    title: 'MediQueue AI',
-    subtitle: 'Symptom checker & OPD guide',
-    historyTitle: 'Chat History',
-    historySub: 'Your previous conversations',
-    suggestedOpd: 'SUGGESTED OPD',
-    estWait: 'Est. wait',
-    getToken: 'Get Token',
-    etuTitle: 'Go to the Emergency Treatment Unit (ETU) now',
-    etuSub: 'Do not wait in an OPD queue.',
-    callAmbulance: `Call ${AMBULANCE_NUMBER} (ambulance)`,
-    analyzing: 'Analyzing...',
-    placeholder: 'Describe your symptoms...',
-    disclaimer: 'AI gives general guidance only, not a medical diagnosis.',
-    timeout: 'The server is taking too long to respond. Please try again.',
-    generic: 'Sorry, something went wrong.',
-    newChat: '+ New chat',
-    clearAll: 'Clear all',
-    clearConfirm: 'Delete all history?',
-    yes: 'Yes',
-    no: 'No',
-    open: 'Open',
-    delete: 'Delete',
-    rename: 'Rename',
-    renameTitle: 'Rename chat',
-    save: 'Save',
-    cancel: 'Cancel',
-    emptyHistory: 'No chats yet. Your conversations will appear here.',
-    loginNeeded: 'Please log in to save and view your chat history.',
-    loading: 'Loading...',
-    retry: 'Retry',
-  },
-  si: {
-    title: 'MediQueue AI',
-    subtitle: 'රෝග ලක්ෂණ පරීක්ෂකය සහ OPD මග පෙන්වීම',
-    historyTitle: 'සංවාද ඉතිහාසය',
-    historySub: 'ඔබේ පෙර සංවාද',
-    suggestedOpd: 'යෝජිත OPD',
-    estWait: 'අනුමාන රැඳී සිටීම',
-    getToken: 'ටෝකනයක් ලබාගන්න',
-    etuTitle: 'දැන්ම හදිසි ප්‍රතිකාර ඒකකයට (ETU) යන්න',
-    etuSub: 'OPD පෝලිමක රැඳී නොසිටින්න.',
-    callAmbulance: `${AMBULANCE_NUMBER} අමතන්න (ගිලන් රථය)`,
-    analyzing: 'විශ්ලේෂණය කරමින්...',
-    placeholder: 'ඔබේ රෝග ලක්ෂණ ලියන්න...',
-    disclaimer: 'AI මගින් ලබාදෙන්නේ සාමාන්‍ය මග පෙන්වීමක් පමණි.',
-    timeout: 'සේවාදායකය පිළිතුරු දීමට වැඩි කාලයක් ගනී. කරුණාකර නැවත උත්සාහ කරන්න.',
-    generic: 'සමාවන්න, දෝෂයක් සිදු විය. කරුණාකර නැවත උත්සාහ කරන්න.',
-    newChat: '+ නව සංවාදය',
-    clearAll: 'සියල්ල මකන්න',
-    clearConfirm: 'සියලු ඉතිහාසය මකන්නද?',
-    yes: 'ඔව්',
-    no: 'නැහැ',
-    open: 'විවෘත කරන්න',
-    delete: 'මකන්න',
-    rename: 'නම වෙනස් කරන්න',
-    renameTitle: 'සංවාදයේ නම වෙනස් කරන්න',
-    save: 'සුරකින්න',
-    cancel: 'අවලංගු කරන්න',
-    emptyHistory: 'තවමත් සංවාද නැත. ඔබේ සංවාද මෙහි දිස්වේ.',
-    loginNeeded: 'සංවාද ඉතිහාසය සුරැකීමට සහ බැලීමට කරුණාකර ලොග් වන්න.',
-    loading: 'පූරණය වෙමින්...',
-    retry: 'නැවත උත්සාහ කරන්න',
-  },
 };
 
 const formatDate = (iso) => {
@@ -214,6 +148,12 @@ const request = async (path, { method = 'GET', token, body } = {}) => {
  *  - navigation: React Navigation prop. If onBack is not given, the back arrow uses navigation.goBack().
  */
 export default function ChatbotScreen({ token: tokenProp, onSelectOpd, onBack, navigation }) {
+  const { i18n } = useTranslation();
+
+  // The chat starts in the app language (Sinhala -> 'si', everything else -> 'en').
+  // The chatbot backend only supports 'en' and 'si' for now.
+  const appLanguage = i18n.language && i18n.language.startsWith('si') ? 'si' : 'en';
+
   // If no token prop is passed, read the one AuthContext saved in AsyncStorage
   const [storedToken, setStoredToken] = useState(null);
 
@@ -231,12 +171,12 @@ export default function ChatbotScreen({ token: tokenProp, onSelectOpd, onBack, n
 
   const token = tokenProp || storedToken;
 
-  const [language, setLanguage] = useState('en');
+  const [language, setLanguage] = useState(appLanguage);
   const [view, setView] = useState('chat'); // 'chat' | 'history'
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState([
-    { id: 'greeting', role: 'bot', text: GREETING.en },
+    { id: 'greeting', role: 'bot', text: GREETING[appLanguage] },
   ]);
 
   const [conversationId, setConversationId] = useState(newConversationId);
@@ -253,7 +193,48 @@ export default function ChatbotScreen({ token: tokenProp, onSelectOpd, onBack, n
   const conversations = groupLogs(history);
 
   const listRef = useRef(null);
-  const t = T[language];
+
+  // UI texts come from the translation JSON files, in the chat language selected with the EN / සිං switch
+  const tr = i18n.getFixedT(language);
+  const t = {
+    title: tr('chatbot_title'),
+    subtitle: tr('chatbot_subtitle'),
+    historyTitle: tr('chatbot_history_title'),
+    historySub: tr('chatbot_history_sub'),
+    suggestedOpd: tr('chatbot_suggested_opd'),
+    estWait: tr('chatbot_est_wait'),
+    getToken: tr('chatbot_get_token'),
+    etuTitle: tr('chatbot_etu_title'),
+    etuSub: tr('chatbot_etu_sub'),
+    callAmbulance: tr('chatbot_call_ambulance', { number: AMBULANCE_NUMBER }),
+    analyzing: tr('chatbot_analyzing'),
+    placeholder: tr('chatbot_placeholder'),
+    disclaimer: tr('chatbot_disclaimer'),
+    timeout: tr('chatbot_timeout'),
+    generic: tr('chatbot_generic'),
+    newChat: tr('chatbot_new_chat'),
+    clearAll: tr('chatbot_clear_all'),
+    clearConfirm: tr('chatbot_clear_confirm'),
+    yes: tr('chatbot_yes'),
+    no: tr('chatbot_no'),
+    open: tr('chatbot_open'),
+    delete: tr('chatbot_delete'),
+    rename: tr('chatbot_rename'),
+    renameTitle: tr('chatbot_rename_title'),
+    save: tr('chatbot_save'),
+    cancel: tr('chatbot_cancel'),
+    emptyHistory: tr('chatbot_empty_history'),
+    loginNeeded: tr('chatbot_login_needed'),
+    loading: tr('chatbot_loading'),
+    retry: tr('chatbot_retry'),
+    min: tr('min'),
+    urgencyLabels: {
+      LOW: tr('chatbot_urgency_low'),
+      MEDIUM: tr('chatbot_urgency_medium'),
+      HIGH: tr('chatbot_urgency_high'),
+      CRITICAL_EMERGENCY: tr('chatbot_urgency_emergency'),
+    },
+  };
 
   const scrollToEnd = () =>
     setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
@@ -477,7 +458,7 @@ export default function ChatbotScreen({ token: tokenProp, onSelectOpd, onBack, n
             {urgency && (
               <View style={[styles.badge, { backgroundColor: urgency.bg }]}>
                 <Text style={[styles.badgeText, { color: urgency.fg }]}>
-                  {urgency.label.toUpperCase()}
+                  {(t.urgencyLabels[item.urgencyLevel] || urgency.label).toUpperCase()}
                 </Text>
               </View>
             )}
@@ -509,7 +490,7 @@ export default function ChatbotScreen({ token: tokenProp, onSelectOpd, onBack, n
               <Text style={styles.opdLabel}>{t.suggestedOpd}</Text>
               <Text style={styles.opdName}>{item.opd.opdName}</Text>
               <Text style={styles.opdWait}>
-                {t.estWait}: {item.opd.estimatedWaitMinutes} min
+                {t.estWait}: {item.opd.estimatedWaitMinutes} {t.min}
               </Text>
               <TouchableOpacity
                 style={styles.opdButton}
@@ -538,7 +519,7 @@ export default function ChatbotScreen({ token: tokenProp, onSelectOpd, onBack, n
         <View style={styles.logTop}>
           <View style={[styles.badge, { backgroundColor: urgency.bg, marginBottom: 0 }]}>
             <Text style={[styles.badgeText, { color: urgency.fg }]}>
-              {urgency.label.toUpperCase()}
+              {(t.urgencyLabels[item.urgencyLevel] || urgency.label).toUpperCase()}
             </Text>
           </View>
           <Text style={styles.logDate}>{formatDate(item.lastAt)}</Text>

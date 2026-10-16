@@ -131,7 +131,7 @@ export default function LoginScreen({ navigation, route }) {
           activeOpacity={0.7}
         >
           <Ionicons name="shield-checkmark-outline" size={14} color="#2563EB" />
-          <Text className="text-xs font-bold text-blue-600 ml-1">Staff Login</Text>
+          <Text className="text-xs font-bold text-blue-600 ml-1">{t('staff_login', 'Staff Login')}</Text>
         </TouchableOpacity>
       </View>
 

@@ -41,8 +41,8 @@ export default function SelectOpdScreen({ navigation, route }) {
     } catch (err) {
       console.log('Fetch OPD Error:', err.response?.data || err.message);
       Alert.alert(
-        'Error',
-        err.response?.data?.message || 'Failed to load OPDs. Please check backend router.'
+        t('error', 'Error'),
+        err.response?.data?.message || t('failed_load_opds', 'Failed to load OPDs.')
       );
     } finally {
       setLoading(false);
@@ -79,12 +79,15 @@ export default function SelectOpdScreen({ navigation, route }) {
   const getEstWaitTime = (avgConsultMinutes = 10, currentQueue = 10) => {
     const minWait = Math.max(5, (currentQueue - 2) * avgConsultMinutes);
     const maxWait = currentQueue * avgConsultMinutes;
-    return `${minWait}-${maxWait} min`;
+    return `${minWait}-${maxWait} ${t('min', 'min')}`;
   };
 
   const handleContinue = () => {
     if (!selectedOpdId) {
-      Alert.alert('Selection Required', 'Please select an OPD to continue.');
+      Alert.alert(
+        t('selection_required', 'Selection Required'),
+        t('select_opd_to_continue', 'Please select an OPD to continue.')
+      );
       return;
     }
 
@@ -141,7 +144,7 @@ export default function SelectOpdScreen({ navigation, route }) {
             {filteredOpds.length === 0 ? (
               <View className="py-12 items-center justify-center">
                 <Ionicons name="folder-open-outline" size={48} color="#CBD5E1" />
-                <Text className="text-slate-400 text-sm mt-2">No OPD found</Text>
+                <Text className="text-slate-400 text-sm mt-2">{t('no_opd_found', 'No OPD found')}</Text>
               </View>
             ) : (
               filteredOpds.map((item) => {
@@ -178,12 +181,12 @@ export default function SelectOpdScreen({ navigation, route }) {
                         {item.name}
                       </Text>
                       <Text className="text-xs font-semibold text-slate-600">
-                        Current Queue: <Text className="font-bold">{currentQueue}</Text>
+                        {t('current_queue', 'Current Queue')}: <Text className="font-bold">{currentQueue}</Text>
                       </Text>
                       <View className="flex-row items-center mt-1">
                         <Ionicons name="time-outline" size={14} color="#0052CC" />
                         <Text className="text-xs font-semibold text-blue-600 ml-1">
-                          Est. Wait: {getEstWaitTime(item.avgConsultMinutes, currentQueue)}
+                          {t('est_wait', 'Est. Wait')}: {getEstWaitTime(item.avgConsultMinutes, currentQueue)}
                         </Text>
                       </View>
                     </View>

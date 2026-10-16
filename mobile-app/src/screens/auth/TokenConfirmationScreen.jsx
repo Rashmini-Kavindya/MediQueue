@@ -49,7 +49,7 @@ export default function TokenConfirmationScreen({ route, navigation }) {
       }
     } catch (err) {
       console.log('Token Booking Error:', err.response?.data || err.message);
-      const msg = err.response?.data?.message || 'Failed to generate token.';
+      const msg = err.response?.data?.message || t('failed_generate_token', 'Failed to generate token.');
       setErrorMsg(msg);
     } finally {
       setLoading(false);
@@ -100,7 +100,7 @@ export default function TokenConfirmationScreen({ route, navigation }) {
               <Ionicons name="alert-circle-outline" size={36} color="#EF4444" />
             </View>
             <Text className="text-lg font-bold text-slate-900 text-center mb-2">
-              Booking Issue
+              {t('booking_issue', 'Booking Issue')}
             </Text>
             <Text className="text-slate-600 text-sm text-center mb-6">
               {errorMsg}
@@ -110,7 +110,7 @@ export default function TokenConfirmationScreen({ route, navigation }) {
               className="bg-[#0052CC] px-6 py-3 rounded-xl flex-row items-center"
             >
               <Ionicons name="refresh" size={18} color="#FFFFFF" />
-              <Text className="text-white font-bold text-sm ml-2">Try Again</Text>
+              <Text className="text-white font-bold text-sm ml-2">{t('try_again', 'Try Again')}</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -129,7 +129,7 @@ export default function TokenConfirmationScreen({ route, navigation }) {
                 {t('token_booked', 'Token Booked Successfully')}
               </Text>
 
-              <Text className="text-slate-500 text-xs mb-1">{opdName || 'OPD Queue'}</Text>
+              <Text className="text-slate-500 text-xs mb-1">{opdName || t('opd_queue', 'OPD Queue')}</Text>
 
               {/* Token Number Display */}
               <Text className="text-5xl font-black text-slate-900 my-2 tracking-tight">
@@ -139,28 +139,28 @@ export default function TokenConfirmationScreen({ route, navigation }) {
               {/* Details List */}
               <View className="w-full bg-slate-50 rounded-2xl p-4 mt-4">
                 <View className="flex-row justify-between items-center py-2">
-                  <Text className="text-xs font-medium text-slate-500">Queue Position</Text>
+                  <Text className="text-xs font-medium text-slate-500">{t('queue_position', 'Queue Position')}</Text>
                   <Text className="text-xs font-bold text-slate-800">
                     #{tokenData?.tokenSequence}
                   </Text>
                 </View>
 
                 <View className="flex-row justify-between items-center py-2 border-t border-slate-200">
-                  <Text className="text-xs font-medium text-slate-500">Tracking Code</Text>
+                  <Text className="text-xs font-medium text-slate-500">{t('tracking_code', 'Tracking Code')}</Text>
                   <Text className="text-xs font-bold text-blue-600">
                     {tokenData?.trackingCode}
                   </Text>
                 </View>
 
                 <View className="flex-row justify-between items-center py-2 border-t border-slate-200">
-                  <Text className="text-xs font-medium text-slate-500">Queue Date</Text>
+                  <Text className="text-xs font-medium text-slate-500">{t('queue_date', 'Queue Date')}</Text>
                   <Text className="text-xs font-bold text-slate-800">
                     {tokenData?.queueDate}
                   </Text>
                 </View>
 
                 <View className="flex-row justify-between items-center py-2 border-t border-slate-200">
-                  <Text className="text-xs font-medium text-slate-500">Status</Text>
+                  <Text className="text-xs font-medium text-slate-500">{t('status', 'Status')}</Text>
                   <Text className="text-xs font-bold text-amber-600 capitalize">
                     {tokenData?.status}
                   </Text>
@@ -171,7 +171,10 @@ export default function TokenConfirmationScreen({ route, navigation }) {
             <View className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex-row items-center">
               <Ionicons name="information-circle-outline" size={22} color="#0052CC" />
               <Text className="text-xs text-blue-800 ml-3 flex-1">
-                You can monitor your live queue progress from the dashboard anytime using your tracking code.
+                {t(
+                  'monitor_info',
+                  'You can monitor your live queue progress from the dashboard anytime using your tracking code.'
+                )}
               </Text>
             </View>
           </ScrollView>

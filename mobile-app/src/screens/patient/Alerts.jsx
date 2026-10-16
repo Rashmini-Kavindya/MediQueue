@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { AuthContext } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import API from '../../services/api';
@@ -49,7 +50,8 @@ const BODY_INDENT = 52; // icon width (40) + margin (12)
 
 export default function Alerts({ navigation }) {
   const { user } = useContext(AuthContext);
-  const { getFontSize, t } = useSettings();
+  const { getFontSize } = useSettings();
+  const { t } = useTranslation();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -165,7 +167,7 @@ export default function Alerts({ navigation }) {
 
             {/* Page title */}
             <Text style={{ fontSize: getFontSize(28), color: IOS.label, fontWeight: '700', letterSpacing: 0.3, marginBottom: 16, paddingHorizontal: 4 }}>
-              Alerts
+              {t('alerts_title', 'Alerts')}
             </Text>
 
             {newAlerts.length === 0 ? (
@@ -174,7 +176,7 @@ export default function Alerts({ navigation }) {
                   <Ionicons name="notifications-off-outline" size={26} color={IOS.tertiaryLabel} />
                 </View>
                 <Text style={{ fontSize: getFontSize(14), color: IOS.tertiaryLabel, fontWeight: '500' }}>
-                  No new alerts
+                  {t('no_new_alerts', 'No new alerts')}
                 </Text>
               </View>
             ) : (
@@ -189,7 +191,7 @@ export default function Alerts({ navigation }) {
                             <Ionicons name="notifications" size={19} color="#fff" />
                           </View>
                           <Text style={{ fontSize: getFontSize(17), color: IOS.label, fontWeight: '700', letterSpacing: -0.2 }}>
-                            Your turn
+                            {t('alert_your_turn', 'Your turn')}
                           </Text>
                         </View>
                         <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, fontWeight: '500' }}>{item.time}</Text>
@@ -197,7 +199,7 @@ export default function Alerts({ navigation }) {
 
                       <View style={{ marginLeft: BODY_INDENT }}>
                         <Text style={{ fontSize: getFontSize(15), color: IOS.label, fontWeight: '600', lineHeight: 21 }}>
-                          Please proceed to <Text style={{ color: IOS.blue }}>{item.room}.</Text>
+                          {t('alert_proceed_to', 'Please proceed to')} <Text style={{ color: IOS.blue }}>{item.room}.</Text>
                         </Text>
                         <Text style={{ fontSize: getFontSize(13), color: IOS.tertiaryLabel, marginTop: 4, lineHeight: 19 }}>
                           - {item.location} {'\n'}{item.doctor}
@@ -206,7 +208,7 @@ export default function Alerts({ navigation }) {
                         <View style={{ flexDirection: 'row', marginTop: 16 }}>
                           <TouchableOpacity activeOpacity={0.85} style={[{ backgroundColor: IOS.blue, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 999, marginRight: 10 }, squircle]}>
                             <Text style={{ fontSize: getFontSize(13), color: '#fff', fontWeight: '600' }}>
-                              View directions
+                              {t('view_directions', 'View directions')}
                             </Text>
                           </TouchableOpacity>
                           <TouchableOpacity
@@ -215,7 +217,7 @@ export default function Alerts({ navigation }) {
                             style={[{ backgroundColor: IOS.fill, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 999 }, squircle]}
                           >
                             <Text style={{ fontSize: getFontSize(13), color: IOS.secondaryLabel, fontWeight: '600' }}>
-                              Dismiss
+                              {t('dismiss', 'Dismiss')}
                             </Text>
                           </TouchableOpacity>
                         </View>
@@ -234,7 +236,7 @@ export default function Alerts({ navigation }) {
                             <Feather name="clock" size={19} color={IOS.orange} />
                           </View>
                           <Text style={{ fontSize: getFontSize(17), color: IOS.label, fontWeight: '700', letterSpacing: -0.2 }}>
-                            Your turn is near
+                            {t('alert_turn_near', 'Your turn is near')}
                           </Text>
                         </View>
                         <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, fontWeight: '500' }}>{item.time}</Text>
@@ -243,15 +245,15 @@ export default function Alerts({ navigation }) {
                       <View style={{ marginLeft: BODY_INDENT }}>
                         <Text style={{ fontSize: getFontSize(14), color: IOS.secondaryLabel, lineHeight: 21 }}>
                           <Text style={{ fontWeight: '700', color: IOS.label }}>
-                            {item.remainingNumbers} numbers remaining.
+                            {item.remainingNumbers} {t('numbers_remaining', 'numbers remaining.')}
                           </Text>{' '}
-                          {item.message || 'Please return to the OPD waiting area immediately.'}
+                          {item.message || t('alert_return_waiting', 'Please return to the OPD waiting area immediately.')}
                         </Text>
 
                         <View style={{ marginTop: 14, alignSelf: 'flex-start', backgroundColor: IOS.surface, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, flexDirection: 'row', alignItems: 'center' }}>
                           <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: IOS.orange, marginRight: 8 }} />
                           <Text style={{ fontSize: getFontSize(12), color: IOS.secondaryLabel, fontWeight: '600' }}>
-                            Current serving: {item.currentServing} ({item.aheadCount} ahead)
+                            {t('current_serving', 'Current serving')}: {item.currentServing} ({item.aheadCount} {t('ahead', 'ahead')})
                           </Text>
                         </View>
                       </View>
@@ -268,7 +270,7 @@ export default function Alerts({ navigation }) {
                           <Ionicons name="clipboard-outline" size={19} color={IOS.secondaryLabel} />
                         </View>
                         <Text style={{ fontSize: getFontSize(17), color: IOS.label, fontWeight: '700', letterSpacing: -0.2 }}>
-                          Queue update
+                          {t('alert_queue_update', 'Queue update')}
                         </Text>
                       </View>
                       <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, fontWeight: '500' }}>{item.time}</Text>
@@ -276,7 +278,7 @@ export default function Alerts({ navigation }) {
 
                     <View style={{ marginLeft: BODY_INDENT, marginTop: 6 }}>
                       <Text style={{ fontSize: getFontSize(14), color: IOS.secondaryLabel, lineHeight: 21 }}>
-                        {item.message || 'Queue progress updated for your active booking.'}
+                        {item.message || t('alert_queue_default', 'Queue progress updated for your active booking.')}
                       </Text>
                     </View>
                   </View>
@@ -287,7 +289,7 @@ export default function Alerts({ navigation }) {
             {/* Older Notifications Divider */}
             <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 14, marginBottom: 14, paddingHorizontal: 4 }}>
               <Text style={{ fontSize: getFontSize(13), color: IOS.tertiaryLabel, fontWeight: '600', marginRight: 12 }}>
-                Older notifications
+                {t('older_notifications', 'Older notifications')}
               </Text>
               <View style={{ flex: 1, height: 0.5, backgroundColor: 'rgba(60,60,67,0.25)' }} />
             </View>

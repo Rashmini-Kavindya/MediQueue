@@ -16,6 +16,7 @@ import {
   MaterialCommunityIcons,
   FontAwesome5,
 } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { AuthContext } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import API from '../../services/api';
@@ -49,7 +50,8 @@ const cardEdge = { borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(60,
 
 export default function LiveQueue({ navigation, route }) {
   const { user } = useContext(AuthContext);
-  const { getFontSize, t } = useSettings();
+  const { getFontSize } = useSettings();
+  const { t } = useTranslation();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -179,7 +181,7 @@ export default function LiveQueue({ navigation, route }) {
             style={{ fontSize: getFontSize(30), letterSpacing: 0.3, color: IOS.label }}
             className="font-bold"
           >
-            {t?.liveQueueTitle || 'Live Queue'}
+            {t('liveQueueTitle', 'Live Queue')}
           </Text>
           <View
             style={[{ backgroundColor: IOS.greenSoft, alignSelf: 'flex-start' }, squircle]}
@@ -193,7 +195,7 @@ export default function LiveQueue({ navigation, route }) {
               style={{ fontSize: getFontSize(12), color: '#248A3D' }}
               className="font-semibold"
             >
-              Active Sessions
+              {t('active_sessions', 'Active Sessions')}
             </Text>
           </View>
         </View>
@@ -218,13 +220,13 @@ export default function LiveQueue({ navigation, route }) {
               style={{ fontSize: getFontSize(19), color: IOS.label }}
               className="font-semibold text-center"
             >
-              No Active Token Found
+              {t('no_active_token_found', 'No Active Token Found')}
             </Text>
             <Text
               style={{ fontSize: getFontSize(14), color: IOS.secondaryLabel }}
               className="text-center mt-2 leading-5"
             >
-              You do not have an active queue booking for today. Book a token to view live queue details.
+              {t('no_active_token_desc', 'You do not have an active queue booking for today. Book a token to view live queue details.')}
             </Text>
           </View>
         ) : (
@@ -279,7 +281,7 @@ export default function LiveQueue({ navigation, route }) {
                       style={{ fontSize: getFontSize(11), color: IOS.blue, letterSpacing: 0.8 }}
                       className="text-center font-semibold uppercase"
                     >
-                      {t?.yourTokenNumber || 'YOUR TOKEN NUMBER'}
+                      {t('yourTokenNumber', 'YOUR TOKEN NUMBER')}
                     </Text>
                     <Text
                       style={{ fontSize: getFontSize(48), color: IOS.label, letterSpacing: -1 }}
@@ -300,7 +302,7 @@ export default function LiveQueue({ navigation, route }) {
                         style={{ fontSize: getFontSize(11), color: 'rgba(255,255,255,0.75)', letterSpacing: 0.5 }}
                         className="font-semibold uppercase"
                       >
-                        {t?.nowServing || 'NOW SERVING'}
+                        {t('nowServing', 'NOW SERVING')}
                       </Text>
                       <Text style={{ fontSize: getFontSize(30) }} className="font-bold text-white">
                         {queueData.nowServingToken}
@@ -309,7 +311,7 @@ export default function LiveQueue({ navigation, route }) {
                         style={{ fontSize: getFontSize(11), color: 'rgba(255,255,255,0.85)' }}
                         className="leading-4"
                       >
-                        {t?.doctorWithPatient || 'Doctor is currently with patient'}
+                        {t('doctorWithPatient', 'Doctor is currently with patient')}
                       </Text>
                     </View>
 
@@ -322,14 +324,14 @@ export default function LiveQueue({ navigation, route }) {
                         style={{ fontSize: getFontSize(11), color: IOS.secondaryLabel, letterSpacing: 0.5 }}
                         className="font-semibold uppercase"
                       >
-                        {t?.estWaitTime || 'EST. WAIT TIME'}
+                        {t('estWaitTime', 'EST. WAIT TIME')}
                       </Text>
                       <View className="flex-row items-baseline">
                         <Text style={{ fontSize: getFontSize(28), color: IOS.label }} className="font-bold">
                           ~ {queueData.estimatedWaitMinutes || 0}{' '}
                         </Text>
                         <Text style={{ fontSize: getFontSize(15), color: IOS.label }} className="font-semibold">
-                          mins
+                          {t('mins', 'mins')}
                         </Text>
                       </View>
                       <View className="flex-row items-center">
@@ -338,7 +340,7 @@ export default function LiveQueue({ navigation, route }) {
                           style={{ fontSize: getFontSize(11), color: IOS.secondaryLabel }}
                           className="font-medium ml-1"
                         >
-                          Live Estimate
+                          {t('live_estimate', 'Live Estimate')}
                         </Text>
                       </View>
                     </View>
@@ -360,7 +362,7 @@ export default function LiveQueue({ navigation, route }) {
                         style={{ fontSize: getFontSize(13), color: IOS.label }}
                         className="font-semibold flex-1"
                       >
-                        {queueData.patientsAhead !== undefined ? queueData.patientsAhead : 0} PATIENTS AHEAD OF YOU
+                        {queueData.patientsAhead !== undefined ? queueData.patientsAhead : 0} {t('patients_ahead_of_you', 'PATIENTS AHEAD OF YOU')}
                       </Text>
                     </View>
                     <View className="bg-white px-2.5 py-1 rounded-full ml-2">
@@ -378,11 +380,11 @@ export default function LiveQueue({ navigation, route }) {
                         style={{ fontSize: getFontSize(16), color: IOS.label, letterSpacing: -0.2 }}
                         className="font-semibold ml-2"
                       >
-                        {t?.queueProgress || 'Queue Progress'}
+                        {t('queueProgress', 'Queue Progress')}
                       </Text>
                     </View>
                     <Text style={{ fontSize: getFontSize(12), color: IOS.secondaryLabel }} className="font-medium">
-                      Active Tokens
+                      {t('active_tokens_label', 'Active Tokens')}
                     </Text>
                   </View>
 
@@ -429,13 +431,13 @@ export default function LiveQueue({ navigation, route }) {
                             {item.isCurrent ? (
                               <View style={{ backgroundColor: IOS.blue }} className="px-2.5 py-1 rounded-full">
                                 <Text style={{ fontSize: getFontSize(10) }} className="font-bold text-white">
-                                  {t?.statusCurrent || 'CURRENT'}
+                                  {t('statusCurrent', 'CURRENT')}
                                 </Text>
                               </View>
                             ) : item.isUser ? (
                               <View style={{ backgroundColor: IOS.blue }} className="px-2.5 py-1 rounded-full">
                                 <Text style={{ fontSize: getFontSize(10) }} className="font-bold text-white">
-                                  {t?.statusYou || 'YOU'}
+                                  {t('statusYou', 'YOU')}
                                 </Text>
                               </View>
                             ) : (
@@ -457,7 +459,7 @@ export default function LiveQueue({ navigation, route }) {
                         style={{ fontSize: getFontSize(13), color: IOS.secondaryLabel }}
                         className="text-center py-4 bg-white"
                       >
-                        No queue details available.
+                        {t('no_queue_details', 'No queue details available.')}
                       </Text>
                     )}
                   </View>
@@ -469,13 +471,13 @@ export default function LiveQueue({ navigation, route }) {
                       style={{ fontSize: getFontSize(11), color: IOS.secondaryLabel }}
                       className="font-semibold ml-1 uppercase"
                     >
-                      {t?.queueStatusMoving || 'QUEUE IS MOVING'}
+                      {t('queueStatusMoving', 'QUEUE IS MOVING')}
                     </Text>
                     <Text
                       style={{ fontSize: getFontSize(10), color: '#AEAEB2' }}
                       className="font-medium ml-2 uppercase"
                     >
-                      UPDATED: {queueData.lastUpdatedTime}
+                      {t('updated_label', 'UPDATED')}: {queueData.lastUpdatedTime}
                     </Text>
                   </View>
                 </View>

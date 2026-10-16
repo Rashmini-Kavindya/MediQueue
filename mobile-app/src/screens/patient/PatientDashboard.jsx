@@ -2,6 +2,7 @@ import React, { useContext, useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, RefreshControl, Modal, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { AuthContext } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import API from '../../services/api';
@@ -43,7 +44,8 @@ const edge = { borderWidth: 0.5, borderColor: 'rgba(60,60,67,0.12)' };
 
 export default function PatientDashboard({ navigation }) {
   const { user, logout } = useContext(AuthContext);
-  const { getFontSize, t } = useSettings();
+  const { getFontSize } = useSettings();
+  const { t } = useTranslation();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -57,10 +59,10 @@ export default function PatientDashboard({ navigation }) {
 
   // Common quick cancel reasons for better UX
   const quickReasons = [
-    'Doctor visit postponed',
-    'Wrong clinic selected',
-    'Feeling better now',
-    'Emergency came up'
+    t('reason_postponed', 'Doctor visit postponed'),
+    t('reason_wrong_clinic', 'Wrong clinic selected'),
+    t('reason_feeling_better', 'Feeling better now'),
+    t('reason_emergency', 'Emergency came up'),
   ];
 
   // Backend API එකෙන් Patientගේ Active Queues ලැයිස්තුව ලබා ගැනීම
@@ -114,7 +116,7 @@ export default function PatientDashboard({ navigation }) {
       });
 
       if (res.data && res.data.success) {
-        Alert.alert('Success', 'Token cancelled successfully.');
+        Alert.alert(t('success', 'Success'), t('token_cancelled_success', 'Token cancelled successfully.'));
         setCancelModalVisible(false);
         setSelectedTokenForCancel(null);
         setCancelReason('');
@@ -122,7 +124,7 @@ export default function PatientDashboard({ navigation }) {
       }
     } catch (error) {
       console.error('Cancel Error:', error?.response?.data || error.message);
-      Alert.alert('Error', error?.response?.data?.message || 'Failed to cancel token.');
+      Alert.alert(t('error', 'Error'), error?.response?.data?.message || t('failed_cancel_token', 'Failed to cancel token.'));
     } finally {
       setCancelling(false);
     }
@@ -155,7 +157,7 @@ export default function PatientDashboard({ navigation }) {
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, paddingHorizontal: 4 }}>
             <View style={{ flex: 1, paddingRight: 12 }}>
               <Text style={{ fontSize: getFontSize(13), color: IOS.tertiaryLabel, fontWeight: '500' }}>
-                {t?.goodMorning || 'Good morning'}
+                {t('goodMorning', 'Good morning')}
               </Text>
               <Text numberOfLines={1} style={{ fontSize: getFontSize(26), color: IOS.label, fontWeight: '700', letterSpacing: 0.2 }}>
                 {patientName}
@@ -165,7 +167,7 @@ export default function PatientDashboard({ navigation }) {
             <View style={{ backgroundColor: IOS.greenSoft, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, flexDirection: 'row', alignItems: 'center' }}>
               <MaterialCommunityIcons name="shield-check" size={14} color={IOS.green} />
               <Text style={{ fontSize: getFontSize(12), color: '#248A3D', fontWeight: '600', marginLeft: 4 }}>
-                {t?.nicVerified || 'NIC Verified'}
+                {t('nicVerified', 'NIC Verified')}
               </Text>
             </View>
           </View>
@@ -197,10 +199,10 @@ export default function PatientDashboard({ navigation }) {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: getFontSize(17), color: '#fff', fontWeight: '600', letterSpacing: -0.2 }}>
-                  {t?.getNewToken || 'Get New Token'}
+                  {t('getNewToken', 'Get New Token')}
                 </Text>
                 <Text style={{ fontSize: getFontSize(13), color: 'rgba(255,255,255,0.8)', marginTop: 2 }}>
-                  {t?.bookOrJoinQueue || 'Book a clinic or join an OPD queue'}
+                  {t('bookOrJoinQueue', 'Book a clinic or join an OPD queue')}
                 </Text>
               </View>
             </View>
@@ -210,12 +212,12 @@ export default function PatientDashboard({ navigation }) {
           {/* Active Queues Section Header */}
           <View style={{ marginBottom: 12, paddingHorizontal: 4, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <Text style={{ fontSize: getFontSize(18), color: IOS.label, fontWeight: '700', letterSpacing: -0.2 }}>
-              {t?.activeTokens || 'Active Queue Tokens'}
+              {t('activeTokens', 'Active Queue Tokens')}
             </Text>
             {queueList.length > 0 && (
               <View style={{ backgroundColor: IOS.blueSoft, paddingHorizontal: 10, paddingVertical: 3, borderRadius: 999 }}>
                 <Text style={{ fontSize: getFontSize(12), color: IOS.blue, fontWeight: '600' }}>
-                  {queueList.length} Active
+                  {queueList.length} {t('active', 'Active')}
                 </Text>
               </View>
             )}
@@ -265,7 +267,7 @@ export default function PatientDashboard({ navigation }) {
                   {/* Token Number */}
                   <View style={[{ backgroundColor: IOS.blueSoft, borderRadius: 20, alignItems: 'center', paddingVertical: 18, marginBottom: 12 }, squircle]}>
                     <Text style={{ fontSize: getFontSize(12), color: IOS.blue, fontWeight: '600', letterSpacing: 0.6, textTransform: 'uppercase' }}>
-                      {t?.yourToken || 'Your token'}
+                      {t('yourToken', 'Your token')}
                     </Text>
                     <Text style={{ fontSize: getFontSize(44), color: IOS.label, fontWeight: '800', letterSpacing: 0.5, marginTop: 2 }}>
                       {queueData.tokenNo || queueData.tokenSequence || 'N/A'}
@@ -278,14 +280,14 @@ export default function PatientDashboard({ navigation }) {
                       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                         <MaterialCommunityIcons name="check-circle" size={14} color={IOS.green} />
                         <Text style={{ fontSize: getFontSize(12), color: IOS.green, fontWeight: '600', marginLeft: 4 }}>
-                          {t?.nowServing || 'Now serving'}
+                          {t('nowServing', 'Now serving')}
                         </Text>
                       </View>
                       <Text style={{ fontSize: getFontSize(21), color: IOS.label, fontWeight: '700', textAlign: 'center', textTransform: 'capitalize' }} numberOfLines={1}>
                         {displayCurrentToken}
                       </Text>
                       <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, marginTop: 2 }}>
-                        {displayRoom ? `${displayRoom} door` : 'Room door'}
+                        {displayRoom ? `${displayRoom} ${t('door', 'door')}` : t('room_door', 'Room door')}
                       </Text>
                     </View>
 
@@ -293,14 +295,14 @@ export default function PatientDashboard({ navigation }) {
                       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                         <MaterialCommunityIcons name="account-group" size={14} color={IOS.secondaryLabel} />
                         <Text style={{ fontSize: getFontSize(12), color: IOS.secondaryLabel, fontWeight: '600', marginLeft: 4 }}>
-                          {t?.aheadOfYuo || 'Ahead of you'}
+                          {t('aheadOfYou', 'Ahead of you')}
                         </Text>
                       </View>
                       <Text style={{ fontSize: getFontSize(24), color: IOS.label, fontWeight: '700' }}>
                         {queueData.patientsAhead !== undefined ? queueData.patientsAhead : 0}
                       </Text>
                       <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, marginTop: 2 }}>
-                        {t?.patientsQueued || 'Patients queued'}
+                        {t('patientsQueued', 'Patients queued')}
                       </Text>
                     </View>
                   </View>
@@ -311,19 +313,19 @@ export default function PatientDashboard({ navigation }) {
                       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <MaterialCommunityIcons name="clock-outline" size={19} color={IOS.secondaryLabel} />
                         <Text style={{ fontSize: getFontSize(14), color: IOS.secondaryLabel, fontWeight: '500', marginLeft: 8 }}>
-                          {t?.estimatedWait || 'Estimated Wait:'}
+                          {t('estimatedWait', 'Estimated Wait:')}
                         </Text>
                       </View>
                       <Text style={{ fontSize: getFontSize(16), color: IOS.label, fontWeight: '700' }}>
                         {queueData.estimatedWaitMinutes !== undefined
-                          ? `${queueData.estimatedWaitMinutes} MIN` 
+                          ? `${queueData.estimatedWaitMinutes} ${t('min_upper', 'MIN')}` 
                           : 'N/A'}
                       </Text>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
                       <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: IOS.green, marginRight: 8 }} />
                       <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, fontWeight: '500' }}>
-                        {t?.queueMovingSteadily || 'Queue is moving steadily'}
+                        {t('queueMovingSteadily', 'Queue is moving steadily')}
                       </Text>
                     </View>
                   </View>
@@ -335,7 +337,7 @@ export default function PatientDashboard({ navigation }) {
                     style={[{ backgroundColor: IOS.blueSoft, paddingVertical: 14, borderRadius: 16, alignItems: 'center', justifyContent: 'center', flexDirection: 'row' }, squircle]}
                   >
                     <Text style={{ fontSize: getFontSize(16), color: IOS.blue, fontWeight: '600' }}>
-                      {t?.viewLiveQueue || 'View Live Queue'}
+                      {t('viewLiveQueue', 'View Live Queue')}
                     </Text>
                     <MaterialCommunityIcons name="chevron-right" size={20} color={IOS.blue} style={{ marginLeft: 2 }} />
                   </TouchableOpacity>
@@ -351,7 +353,7 @@ export default function PatientDashboard({ navigation }) {
                       style={[{ paddingVertical: 13, alignItems: 'center', justifyContent: 'center', marginTop: 8, backgroundColor: IOS.redSoft, borderRadius: 16 }, squircle]}
                     >
                       <Text style={{ fontSize: getFontSize(15), color: IOS.red, fontWeight: '600' }}>
-                        Cancel This Token
+                        {t('cancel_this_token', 'Cancel This Token')}
                       </Text>
                     </TouchableOpacity>
                   )}
@@ -366,10 +368,10 @@ export default function PatientDashboard({ navigation }) {
                 <MaterialCommunityIcons name="clipboard-text-outline" size={30} color={IOS.blue} />
               </View>
               <Text style={{ fontSize: getFontSize(17), color: IOS.label, fontWeight: '600', marginBottom: 4 }}>
-                No Active Tokens
+                {t('no_active_tokens', 'No Active Tokens')}
               </Text>
               <Text style={{ fontSize: getFontSize(14), color: IOS.tertiaryLabel, textAlign: 'center', lineHeight: 20 }}>
-                You don't have any active queue tokens right now. Use the button above to get a new one.
+                {t('no_active_tokens_desc', "You don't have any active queue tokens right now. Use the button above to get a new one.")}
               </Text>
             </View>
           )}
@@ -424,20 +426,20 @@ export default function PatientDashboard({ navigation }) {
             </View>
 
             <Text style={{ fontSize: getFontSize(18), color: IOS.label, fontWeight: '700', textAlign: 'center', marginBottom: 6, letterSpacing: -0.2 }}>
-              Confirm Cancellation
+              {t('confirm_cancellation', 'Confirm Cancellation')}
             </Text>
             <Text style={{ fontSize: getFontSize(14), color: IOS.tertiaryLabel, textAlign: 'center', marginBottom: 16, lineHeight: 20 }}>
-              Are you sure you wish to cancel your token? You will need to book a new one if you change your mind.
+              {t('confirm_cancellation_msg', 'Are you sure you wish to cancel your token? You will need to book a new one if you change your mind.')}
             </Text>
 
             {/* Selected Token details preview box */}
             {selectedTokenForCancel && (
               <View style={[{ backgroundColor: IOS.surface, padding: 14, borderRadius: 16, marginBottom: 16 }, squircle]}>
                 <Text style={{ fontSize: getFontSize(13), color: IOS.tertiaryLabel, fontWeight: '500' }}>
-                  Token No: <Text style={{ color: IOS.label, fontWeight: '700' }}>{selectedTokenForCancel.tokenNo || selectedTokenForCancel.tokenSequence}</Text>
+                  {t('token_no', 'Token No')}: <Text style={{ color: IOS.label, fontWeight: '700' }}>{selectedTokenForCancel.tokenNo || selectedTokenForCancel.tokenSequence}</Text>
                 </Text>
                 <Text style={{ fontSize: getFontSize(13), color: IOS.tertiaryLabel, fontWeight: '500', marginTop: 4 }}>
-                  Clinic/OPD: <Text style={{ color: IOS.label, fontWeight: '600' }}>{selectedTokenForCancel.clinicName || selectedTokenForCancel.department || selectedTokenForCancel.opdName || 'General'}</Text>
+                  {t('clinic_opd', 'Clinic/OPD')}: <Text style={{ color: IOS.label, fontWeight: '600' }}>{selectedTokenForCancel.clinicName || selectedTokenForCancel.department || selectedTokenForCancel.opdName || t('general_label', 'General')}</Text>
                 </Text>
               </View>
             )}
@@ -445,7 +447,7 @@ export default function PatientDashboard({ navigation }) {
             {/* Quick Reason Suggestions (Chips) */}
             <View style={{ marginBottom: 10 }}>
               <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, fontWeight: '500', marginBottom: 8 }}>
-                Quick reasons
+                {t('quick_reasons', 'Quick reasons')}
               </Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row' }}>
                 {quickReasons.map((reason, idx) => (
@@ -471,7 +473,7 @@ export default function PatientDashboard({ navigation }) {
 
             {/* Custom Reason Input */}
             <TextInput
-              placeholder="Or type a custom reason..."
+              placeholder={t('custom_reason_ph', 'Or type a custom reason...')}
               placeholderTextColor="#8E8E93"
               value={cancelReason}
               onChangeText={setCancelReason}
@@ -499,7 +501,7 @@ export default function PatientDashboard({ navigation }) {
                 style={[{ flex: 1, backgroundColor: IOS.fill, paddingVertical: 14, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginRight: 6 }, squircle]}
               >
                 <Text style={{ fontSize: getFontSize(16), color: IOS.label, fontWeight: '600' }}>
-                  Keep Token
+                  {t('keep_token', 'Keep Token')}
                 </Text>
               </TouchableOpacity>
 
@@ -513,7 +515,7 @@ export default function PatientDashboard({ navigation }) {
                   <ActivityIndicator size="small" color="#ffffff" />
                 ) : (
                   <Text style={{ fontSize: getFontSize(16), color: '#fff', fontWeight: '600' }}>
-                    Yes, Cancel
+                    {t('yes_cancel', 'Yes, Cancel')}
                   </Text>
                 )}
               </TouchableOpacity>

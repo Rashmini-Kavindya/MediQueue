@@ -2,6 +2,7 @@ import React, { useState, useContext } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { AuthContext } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import API from '../../services/api';
@@ -55,6 +56,7 @@ const overlayStyle = {
 export default function ConfirmNewToken({ route, navigation }) {
   const { user } = useContext(AuthContext);
   const { getFontSize } = useSettings();
+  const { t } = useTranslation();
 
   const { selectedClinic, reason } = route.params || {
     selectedClinic: {
@@ -131,12 +133,12 @@ export default function ConfirmNewToken({ route, navigation }) {
         >
           <Ionicons name="chevron-back" size={24} color={IOS.blue} />
           <Text style={{ fontSize: getFontSize(17), color: IOS.blue, fontWeight: '500' }}>
-            Back
+            {t('back', 'Back')}
           </Text>
         </TouchableOpacity>
 
         <Text style={{ fontSize: getFontSize(17), color: IOS.label, fontWeight: '600' }}>
-          Confirm New Token
+          {t('confirm_new_token', 'Confirm New Token')}
         </Text>
 
         <View style={{ width: 80 }} />
@@ -151,18 +153,18 @@ export default function ConfirmNewToken({ route, navigation }) {
         <View style={[{ backgroundColor: IOS.white, borderRadius: 24, padding: 18, marginBottom: 20 }, cardShadow]}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: IOS.separator }}>
             <Text style={{ fontSize: getFontSize(17), color: IOS.label, fontWeight: '700' }}>
-              New clinic request
+              {t('new_clinic_request', 'New clinic request')}
             </Text>
             <View style={{ backgroundColor: IOS.blueSoft, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 }}>
               <Text style={{ fontSize: getFontSize(11), color: IOS.blue, fontWeight: '600' }}>
-                Additional Token
+                {t('additional_token', 'Additional Token')}
               </Text>
             </View>
           </View>
 
           {/* Department */}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <Text style={detailLabelStyle}>Department</Text>
+            <Text style={detailLabelStyle}>{t('department', 'Department')}</Text>
             <View style={{ alignItems: 'flex-end', flex: 1, marginLeft: 12 }}>
               <Text numberOfLines={1} style={{ fontSize: getFontSize(16), color: IOS.label, fontWeight: '600' }}>{selectedClinic.name}</Text>
               <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, marginTop: 2 }}>{selectedClinic.room} • {selectedClinic.floor}</Text>
@@ -171,7 +173,7 @@ export default function ConfirmNewToken({ route, navigation }) {
 
           {/* Patient */}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <Text style={detailLabelStyle}>Patient</Text>
+            <Text style={detailLabelStyle}>{t('patient', 'Patient')}</Text>
             <Text style={{ fontSize: getFontSize(15), color: IOS.label, fontWeight: '600' }}>
               {user?.name || 'Rashmini Silva'}
             </Text>
@@ -179,7 +181,7 @@ export default function ConfirmNewToken({ route, navigation }) {
 
           {/* Projected Wait */}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
-            <Text style={detailLabelStyle}>Projected wait</Text>
+            <Text style={detailLabelStyle}>{t('projected_wait', 'Projected wait')}</Text>
             <View style={{ backgroundColor: IOS.greenSoft, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, flexDirection: 'row', alignItems: 'center' }}>
               <Ionicons name="time-outline" size={14} color={IOS.greenDark} style={{ marginRight: 4 }} />
               <Text style={{ fontSize: getFontSize(12), color: IOS.greenDark, fontWeight: '600' }}>
@@ -191,13 +193,13 @@ export default function ConfirmNewToken({ route, navigation }) {
           {/* Estimated Token Box */}
           <View style={{ backgroundColor: IOS.surface, borderRadius: 18, paddingVertical: 20, paddingHorizontal: 16, alignItems: 'center' }}>
             <Text style={{ fontSize: getFontSize(13), color: IOS.tertiaryLabel, fontWeight: '500' }}>
-              Estimated status
+              {t('estimated_status', 'Estimated status')}
             </Text>
             <Text style={{ fontSize: getFontSize(26), color: IOS.label, fontWeight: '700', letterSpacing: 0.3, marginVertical: 4 }}>
-              Ready to Issue
+              {t('ready_to_issue', 'Ready to Issue')}
             </Text>
             <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, textAlign: 'center', lineHeight: 17 }}>
-              Final token number and queue position will be assigned upon confirmation
+              {t('final_token_note', 'Final token number and queue position will be assigned upon confirmation')}
             </Text>
           </View>
         </View>
@@ -222,7 +224,7 @@ export default function ConfirmNewToken({ route, navigation }) {
             {isChecked && <Ionicons name="checkmark" size={15} color="#ffffff" />}
           </View>
           <Text style={{ fontSize: getFontSize(14), color: IOS.secondaryLabel, fontWeight: '500', flex: 1, lineHeight: 20 }}>
-            I confirm I wish to request this additional OPD token.
+            {t('confirm_token_agree', 'I confirm I wish to request this additional OPD token.')}
           </Text>
         </TouchableOpacity>
 
@@ -247,7 +249,7 @@ export default function ConfirmNewToken({ route, navigation }) {
           ) : (
             <>
               <Text style={{ fontSize: getFontSize(17), color: '#fff', fontWeight: '600', marginRight: 8 }}>
-                Confirm & Get Token
+                {t('confirm_get_token', 'Confirm & Get Token')}
               </Text>
               <Ionicons name="arrow-forward" size={18} color="#ffffff" />
             </>
@@ -260,7 +262,7 @@ export default function ConfirmNewToken({ route, navigation }) {
           style={{ backgroundColor: IOS.fill, paddingVertical: 16, borderRadius: 16, alignItems: 'center', justifyContent: 'center' }}
         >
           <Text style={{ fontSize: getFontSize(16), color: IOS.secondaryLabel, fontWeight: '600' }}>
-            Go Back
+            {t('go_back', 'Go Back')}
           </Text>
         </TouchableOpacity>
 
@@ -274,9 +276,9 @@ export default function ConfirmNewToken({ route, navigation }) {
               <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: IOS.greenSoft, justifyContent: 'center', alignItems: 'center', marginBottom: 12 }}>
                 <Ionicons name="checkmark-circle" size={36} color={IOS.green} />
               </View>
-              <Text style={{ fontSize: getFontSize(20), color: IOS.label, fontWeight: '700', textAlign: 'center' }}>Token Issued Successfully!</Text>
+              <Text style={{ fontSize: getFontSize(20), color: IOS.label, fontWeight: '700', textAlign: 'center' }}>{t('token_issued_success', 'Token Issued Successfully!')}</Text>
               <Text style={{ fontSize: getFontSize(13), color: IOS.tertiaryLabel, textAlign: 'center', marginTop: 4 }}>
-                Your OPD appointment slot has been reserved
+                {t('slot_reserved', 'Your OPD appointment slot has been reserved')}
               </Text>
             </View>
 
@@ -289,13 +291,13 @@ export default function ConfirmNewToken({ route, navigation }) {
                 </View>
               </View>
               <View style={{ backgroundColor: IOS.greenSoft, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 }}>
-                <Text style={{ fontSize: getFontSize(11), color: IOS.greenDark, fontWeight: '600' }}>Confirmed</Text>
+                <Text style={{ fontSize: getFontSize(11), color: IOS.greenDark, fontWeight: '600' }}>{t('confirmed', 'Confirmed')}</Text>
               </View>
             </View>
 
             <View style={{ backgroundColor: IOS.surface, borderRadius: 18, paddingVertical: 18, paddingHorizontal: 16, alignItems: 'center', marginBottom: 20 }}>
               <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, fontWeight: '500', textAlign: 'center' }}>
-                Your official OPD token number
+                {t('official_token_number', 'Your official OPD token number')}
               </Text>
               {/* API එකෙන් ලැබුණු සැබෑ ටෝකන් අංකය (tokenNo) හෝ ඩීෆෝල්ට් අගය පෙන්වීම */}
               <Text style={{ fontSize: getFontSize(38), color: IOS.label, fontWeight: '800', letterSpacing: 1, marginVertical: 4 }}>
@@ -303,7 +305,7 @@ export default function ConfirmNewToken({ route, navigation }) {
               </Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
                 <Ionicons name="business-outline" size={13} color={IOS.tertiaryLabel} style={{ marginRight: 5 }} />
-                <Text style={{ fontSize: getFontSize(12), color: IOS.secondaryLabel, fontWeight: '500' }}>Counter: {selectedClinic.room}</Text>
+                <Text style={{ fontSize: getFontSize(12), color: IOS.secondaryLabel, fontWeight: '500' }}>{t('counter', 'Counter')}: {selectedClinic.room}</Text>
               </View>
             </View>
 
@@ -315,7 +317,7 @@ export default function ConfirmNewToken({ route, navigation }) {
               activeOpacity={0.85}
               style={{ backgroundColor: IOS.blue, paddingVertical: 15, borderRadius: 14, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 10 }}
             >
-              <Text style={{ fontSize: getFontSize(16), color: '#fff', fontWeight: '600', marginRight: 8 }}>View in My Queue</Text>
+              <Text style={{ fontSize: getFontSize(16), color: '#fff', fontWeight: '600', marginRight: 8 }}>{t('view_in_my_queue', 'View in My Queue')}</Text>
               <Ionicons name="arrow-forward" size={17} color="#ffffff" />
             </TouchableOpacity>
 
@@ -327,7 +329,7 @@ export default function ConfirmNewToken({ route, navigation }) {
               activeOpacity={0.7}
               style={{ backgroundColor: IOS.fill, paddingVertical: 15, borderRadius: 14, alignItems: 'center', justifyContent: 'center' }}
             >
-              <Text style={{ fontSize: getFontSize(16), color: IOS.secondaryLabel, fontWeight: '600' }}>Dismiss & Return Home</Text>
+              <Text style={{ fontSize: getFontSize(16), color: IOS.secondaryLabel, fontWeight: '600' }}>{t('dismiss_return_home', 'Dismiss & Return Home')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -354,12 +356,12 @@ export default function ConfirmNewToken({ route, navigation }) {
                 />
               </View>
               <Text style={{ fontSize: getFontSize(20), color: IOS.label, fontWeight: '700', textAlign: 'center' }}>
-                {isAlreadyExists ? "Active Token Exists" : "Token Request Failed"}
+                {isAlreadyExists ? t('active_token_exists', 'Active Token Exists') : t('token_request_failed', 'Token Request Failed')}
               </Text>
               <Text style={{ fontSize: getFontSize(13), color: IOS.tertiaryLabel, textAlign: 'center', marginTop: 6, paddingHorizontal: 8, lineHeight: 19 }}>
                 {errorMessage || (isAlreadyExists 
-                  ? "An active token already exists for this patient in this OPD today." 
-                  : "Could not generate the token. Please check your network or try again.")}
+                  ? t('active_token_exists_msg', 'An active token already exists for this patient in this OPD today.')
+                  : t('token_failed_msg', 'Could not generate the token. Please check your network or try again.'))}
               </Text>
             </View>
 
@@ -370,12 +372,12 @@ export default function ConfirmNewToken({ route, navigation }) {
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: getFontSize(15), color: IOS.label, fontWeight: '600' }}>{selectedClinic.name}</Text>
                 <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, marginTop: 2 }}>
-                  {isAlreadyExists ? "Please check your live queue status." : `${selectedClinic.room}`}
+                  {isAlreadyExists ? t('check_live_queue', 'Please check your live queue status.') : `${selectedClinic.room}`}
                 </Text>
               </View>
               <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: isAlreadyExists ? IOS.orangeSoft : IOS.redSoft }}>
                 <Text style={{ fontSize: getFontSize(11), fontWeight: '600', color: isAlreadyExists ? IOS.orange : IOS.red }}>
-                  {isAlreadyExists ? 'Active' : 'Failed'}
+                  {isAlreadyExists ? t('active', 'Active') : t('failed', 'Failed')}
                 </Text>
               </View>
             </View>
@@ -389,7 +391,7 @@ export default function ConfirmNewToken({ route, navigation }) {
                 activeOpacity={0.85}
                 style={{ backgroundColor: IOS.blue, paddingVertical: 15, borderRadius: 14, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 10 }}
               >
-                <Text style={{ fontSize: getFontSize(16), color: '#fff', fontWeight: '600', marginRight: 8 }}>View Live Queue</Text>
+                <Text style={{ fontSize: getFontSize(16), color: '#fff', fontWeight: '600', marginRight: 8 }}>{t('viewLiveQueue', 'View Live Queue')}</Text>
                 <Ionicons name="arrow-forward" size={17} color="#ffffff" />
               </TouchableOpacity>
             ) : (
@@ -399,7 +401,7 @@ export default function ConfirmNewToken({ route, navigation }) {
                 activeOpacity={0.85}
                 style={{ backgroundColor: IOS.label, paddingVertical: 15, borderRadius: 14, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 10 }}
               >
-                <Text style={{ fontSize: getFontSize(16), color: '#fff', fontWeight: '600', marginRight: 8 }}>Try Again</Text>
+                <Text style={{ fontSize: getFontSize(16), color: '#fff', fontWeight: '600', marginRight: 8 }}>{t('try_again', 'Try Again')}</Text>
                 <Ionicons name="arrow-forward" size={17} color="#ffffff" />
               </TouchableOpacity>
             )}
@@ -409,7 +411,7 @@ export default function ConfirmNewToken({ route, navigation }) {
               activeOpacity={0.7}
               style={{ backgroundColor: IOS.fill, paddingVertical: 15, borderRadius: 14, alignItems: 'center', justifyContent: 'center' }}
             >
-              <Text style={{ fontSize: getFontSize(16), color: IOS.secondaryLabel, fontWeight: '600' }}>Close</Text>
+              <Text style={{ fontSize: getFontSize(16), color: IOS.secondaryLabel, fontWeight: '600' }}>{t('close', 'Close')}</Text>
             </TouchableOpacity>
           </View>
         </View>
