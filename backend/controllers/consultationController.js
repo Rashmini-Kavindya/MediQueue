@@ -1,6 +1,7 @@
 const Consultation = require('../models/Consultation');
 const Token = require('../models/Token');
 const { generateId } = require('../utils/id');
+const { emitQueueUpdate } = require('../services/queueEvents');
 
 exports.startConsultation = async (req, res) => {
   try {
@@ -56,6 +57,7 @@ exports.startConsultation = async (req, res) => {
     token.consultationStartedAt = startedAt;
 
     await token.save();
+    await emitQueueUpdate(req.io, token.opdId, token);
 
     return res.status(201).json({
       success: true,
@@ -120,6 +122,7 @@ exports.completeConsultation = async (req, res) => {
     token.completedAt = endedAt;
 
     await token.save();
+    await emitQueueUpdate(req.io, token.opdId, token);
 
     return res.status(200).json({
       success: true,

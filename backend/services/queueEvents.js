@@ -16,7 +16,9 @@ const emitQueueUpdate = async (io, opdId, token) => {
           'waiting',
           'called',
           'hold',
-          'in-consultation'
+          'in-consultation',
+          'completed',
+          'skipped'
         ]
       }
     })
@@ -24,20 +26,24 @@ const emitQueueUpdate = async (io, opdId, token) => {
       .select(
         'tokenId tokenNo tokenSequence patientId userId status opdId queueDate'
       );
-// TODO: Before final integration/demo, do not expose patientId/userId
-// through the public queue:update socket payload.
-    
+  const publicQueue = queueTokens.map(t => ({
+      tokenNo: t.tokenNo,
+      tokenSequence: t.tokenSequence,
+      status: t.status,
+      opdId: t.opdId,
+      queueDate: t.queueDate
+    }));
+
     io.to(`opd:${opdId}`).emit('queue:update', {
       success: true,
       data: {
         opdId,
         queueDate: token.queueDate,
         updatedToken: {
-          tokenId: token.tokenId,
           tokenNo: token.tokenNo,
           status: token.status
         },
-        queue: queueTokens
+        queue: publicQueue
       }
     });
 

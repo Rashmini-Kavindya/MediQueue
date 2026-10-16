@@ -17,7 +17,7 @@ exports.createOpd = async (req, res) => {
 
 exports.getOpds = async (req, res) => {
   try {
-    const opds = await OPD.find({ status: 'active' });
+    const opds = await OPD.find({ status: 'active' }).select('opdId name department');
     res.status(200).json({ success: true, data: opds });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
