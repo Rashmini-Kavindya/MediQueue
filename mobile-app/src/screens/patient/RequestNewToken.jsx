@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { AuthContext } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import API from '../../services/api';
@@ -49,6 +50,7 @@ const edge = { borderWidth: 0.5, borderColor: 'rgba(60,60,67,0.12)' };
 export default function RequestNewToken({ navigation, route }) {
   const { user } = useContext(AuthContext);
   const { getFontSize } = useSettings();
+  const { t } = useTranslation();
 
   const presetOpdId = route?.params?.opdId;
   const presetReason = route?.params?.reason;
@@ -150,7 +152,7 @@ export default function RequestNewToken({ navigation, route }) {
       .map((word) => word[0].toUpperCase())
       .join('') || 'U';
   const patientIdLine =
-    [patientNic ? `NIC: ${patientNic}` : '', patientIdText].filter(Boolean).join(' • ') || 'ID not available';
+    [patientNic ? `NIC: ${patientNic}` : '', patientIdText].filter(Boolean).join(' • ') || t('id_not_available', 'ID not available');
   const isNicVerified = Boolean(patientNic);
 
   return (
@@ -170,7 +172,7 @@ export default function RequestNewToken({ navigation, route }) {
               MediQueue OPD
             </Text>
             <Text style={{ fontSize: getFontSize(22), color: IOS.label, fontWeight: '700', letterSpacing: 0.2 }}>
-              Request New Token
+              {t('request_new_token', 'Request New Token')}
             </Text>
           </View>
         </View>
@@ -189,7 +191,7 @@ export default function RequestNewToken({ navigation, route }) {
         
         {/* Patient Information Section */}
         <Text style={{ fontSize: getFontSize(13), color: IOS.tertiaryLabel, fontWeight: '600', letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 8, paddingHorizontal: 6 }}>
-          Patient Information
+          {t('patient_information', 'Patient Information')}
         </Text>
         
         <View style={[{ backgroundColor: IOS.white, borderRadius: 22, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }, squircle, edge, cardShadow]}>
@@ -211,7 +213,7 @@ export default function RequestNewToken({ navigation, route }) {
           <View style={{ backgroundColor: IOS.greenSoft, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, flexDirection: 'row', alignItems: 'center' }}>
             <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: IOS.green, marginRight: 6 }} />
             <Text style={{ fontSize: getFontSize(11), color: '#248A3D', fontWeight: '600' }}>
-              NIC Verified
+              {t('nicVerified', 'NIC Verified')}
             </Text>
           </View>
           )}
@@ -220,11 +222,11 @@ export default function RequestNewToken({ navigation, route }) {
         {/* Select OPD Department Section */}
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, paddingHorizontal: 6 }}>
           <Text style={{ fontSize: getFontSize(13), color: IOS.tertiaryLabel, fontWeight: '600', letterSpacing: 0.6, textTransform: 'uppercase' }}>
-            Select OPD Department
+            {t('select_opd_department', 'Select OPD Department')}
           </Text>
           <TouchableOpacity activeOpacity={0.6}>
             <Text style={{ fontSize: getFontSize(13), color: IOS.blue, fontWeight: '600' }}>
-              Choose 1 clinic
+              {t('choose_one_clinic', 'Choose 1 clinic')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -232,7 +234,7 @@ export default function RequestNewToken({ navigation, route }) {
         {loading ? (
           <View style={{ paddingVertical: 36, alignItems: 'center', justifyContent: 'center' }}>
             <ActivityIndicator size="large" color={IOS.tertiaryLabel} />
-            <Text style={{ color: IOS.tertiaryLabel, marginTop: 10, fontSize: 13 }}>Loading departments...</Text>
+            <Text style={{ color: IOS.tertiaryLabel, marginTop: 10, fontSize: 13 }}>{t('loading_departments', 'Loading departments...')}</Text>
           </View>
         ) : (
           <View style={{ marginBottom: 14 }}>
@@ -313,17 +315,17 @@ export default function RequestNewToken({ navigation, route }) {
         {/* Reason for Visit */}
         <View style={{ flexDirection: 'row', alignItems: 'baseline', marginBottom: 8, marginTop: 10, paddingHorizontal: 6 }}>
           <Text style={{ fontSize: getFontSize(13), color: IOS.tertiaryLabel, fontWeight: '600', letterSpacing: 0.6, textTransform: 'uppercase' }}>
-            Reason for Visit
+            {t('reason_for_visit', 'Reason for Visit')}
           </Text>
           <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, marginLeft: 8 }}>
-            (optional)
+            {t('optional', '(optional)')}
           </Text>
         </View>
 
         <TextInput
           value={reason}
           onChangeText={setReason}
-          placeholder="Enter reason for visit..."
+          placeholder={t('reason_ph', 'Enter reason for visit...')}
           placeholderTextColor="#8E8E93"
           multiline
           style={[
@@ -369,7 +371,7 @@ export default function RequestNewToken({ navigation, route }) {
           ]}
         >
           <Text style={{ fontSize: getFontSize(17), color: '#fff', fontWeight: '600', marginRight: 8 }}>
-            Continue to Confirmation
+            {t('continue_confirmation', 'Continue to Confirmation')}
           </Text>
           <Ionicons name="arrow-forward" size={18} color="#ffffff" />
         </TouchableOpacity>
@@ -380,7 +382,7 @@ export default function RequestNewToken({ navigation, route }) {
           style={[{ backgroundColor: IOS.fill, paddingVertical: 16, borderRadius: 16, alignItems: 'center', justifyContent: 'center' }, squircle]}
         >
           <Text style={{ fontSize: getFontSize(16), color: IOS.secondaryLabel, fontWeight: '600' }}>
-            Cancel / Back to Home
+            {t('cancel_back_home', 'Cancel / Back to Home')}
           </Text>
         </TouchableOpacity>
 

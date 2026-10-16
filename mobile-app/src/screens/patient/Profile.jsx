@@ -19,6 +19,7 @@ import {
   Feather,
   Octicons,
 } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { AuthContext } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import API from '../../services/api';
@@ -59,6 +60,7 @@ const sheetHandle = { width: 38, height: 5, borderRadius: 3, backgroundColor: '#
 
 export default function Profile({ navigation }) {
   const { user, logout } = useContext(AuthContext);
+  const { t, i18n } = useTranslation();
 
   const {
     selectedLanguage,
@@ -66,7 +68,6 @@ export default function Profile({ navigation }) {
     getFontSize,
     updateLanguage,
     updateTextSize,
-    t,
   } = useSettings();
 
   const [loading, setLoading] = useState(true);
@@ -121,6 +122,9 @@ export default function Profile({ navigation }) {
       setSavingLanguage(true);
       // Front-end Context එක update කිරීම
       updateLanguage(lang);
+
+      // i18n භාෂාව මාරු කිරීම (screens වල text මාරු වෙන්නේ මෙයින්)
+      await i18n.changeLanguage(targetCode);
 
       // Backend API Update: User Profile / Preferences එකට save කිරීම
       await API.put('/users/me', { language: targetCode });
@@ -188,14 +192,14 @@ export default function Profile({ navigation }) {
   const preferredLanguage = languageLabelMap[profileData?.language] || selectedLanguage || 'N/A';
 
   const infoRows = [
-    { key: 'patientId', icon: 'hash', label: 'Patient ID', value: patientId },
-    { key: 'nic', icon: 'credit-card', label: 'NIC', value: patientNic },
-    { key: 'phone', icon: 'phone', label: 'Phone', value: patientPhone },
-    { key: 'email', icon: 'mail', label: 'Email', value: patientEmail },
-    { key: 'language', icon: 'globe', label: 'Preferred language', value: preferredLanguage },
-    { key: 'status', icon: 'activity', label: 'Account status', value: accountStatus, isStatus: true },
-    { key: 'since', icon: 'calendar', label: 'Member since', value: formatDate(profileData?.createdAt) },
-    { key: 'lastLogin', icon: 'clock', label: 'Last login', value: formatDateTime(profileData?.lastLoginAt) },
+    { key: 'patientId', icon: 'hash', label: t('info_patient_id', 'Patient ID'), value: patientId },
+    { key: 'nic', icon: 'credit-card', label: t('info_nic', 'NIC'), value: patientNic },
+    { key: 'phone', icon: 'phone', label: t('info_phone', 'Phone'), value: patientPhone },
+    { key: 'email', icon: 'mail', label: t('info_email', 'Email'), value: patientEmail },
+    { key: 'language', icon: 'globe', label: t('info_language', 'Preferred language'), value: preferredLanguage },
+    { key: 'status', icon: 'activity', label: t('info_status', 'Account status'), value: accountStatus, isStatus: true },
+    { key: 'since', icon: 'calendar', label: t('info_since', 'Member since'), value: formatDate(profileData?.createdAt) },
+    { key: 'lastLogin', icon: 'clock', label: t('info_last_login', 'Last login'), value: formatDateTime(profileData?.lastLoginAt) },
   ];
 
   // Reusable bottom sheet header (title + close)
@@ -252,10 +256,10 @@ export default function Profile({ navigation }) {
             <View style={{ paddingHorizontal: 20, marginTop: 12, marginBottom: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <View style={{ flex: 1, marginRight: 8 }}>
                 <Text style={{ fontSize: getFontSize(28), color: IOS.label, fontWeight: '700', letterSpacing: 0.3 }}>
-                  {t?.patientProfile || 'Patient Profile'}
+                  {t('patientProfile', 'Patient Profile')}
                 </Text>
                 <Text style={{ fontSize: getFontSize(13), color: IOS.tertiaryLabel, marginTop: 2 }}>
-                  {t?.profileSubtitle || 'Manage your account settings'}
+                  {t('profileSubtitle', 'Manage your account settings')}
                 </Text>
               </View>
 
@@ -291,7 +295,7 @@ export default function Profile({ navigation }) {
               <View style={{ marginTop: 14, backgroundColor: IOS.fill, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, flexDirection: 'row', alignItems: 'center' }}>
                 <MaterialCommunityIcons name="medical-bag" size={16} color={IOS.secondaryLabel} />
                 <Text style={{ fontSize: getFontSize(12), color: IOS.secondaryLabel, fontWeight: '600', marginLeft: 8 }}>
-                  {roleDisplay} ACCOUNT
+                  {roleDisplay} {t('account_word', 'ACCOUNT')}
                 </Text>
               </View>
             </View>
@@ -300,12 +304,12 @@ export default function Profile({ navigation }) {
             <View style={{ paddingHorizontal: 20, marginTop: 24 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, paddingHorizontal: 4 }}>
                 <Text style={{ fontSize: getFontSize(19), color: IOS.label, fontWeight: '700', letterSpacing: 0.3 }}>
-                  Personal Information
+                  {t('personal_information', 'Personal Information')}
                 </Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Feather name="lock" size={12} color={IOS.tertiaryLabel} />
                   <Text style={{ fontSize: getFontSize(13), color: IOS.tertiaryLabel, fontWeight: '500', marginLeft: 4 }}>
-                    Read only
+                    {t('read_only', 'Read only')}
                   </Text>
                 </View>
               </View>
@@ -351,7 +355,7 @@ export default function Profile({ navigation }) {
               </View>
 
               <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, marginTop: 10, paddingHorizontal: 6, lineHeight: 17 }}>
-                These details are managed by the hospital and can't be edited here.
+                {t('details_managed_note', "These details are managed by the hospital and can't be edited here.")}
               </Text>
             </View>
 
@@ -359,10 +363,10 @@ export default function Profile({ navigation }) {
             <View style={{ paddingHorizontal: 20, marginTop: 24 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, paddingHorizontal: 4 }}>
                 <Text style={{ fontSize: getFontSize(19), color: IOS.label, fontWeight: '700', letterSpacing: 0.3 }}>
-                  {t?.appSettings || 'App Settings'}
+                  {t('appSettings', 'App Settings')}
                 </Text>
                 <Text style={{ fontSize: getFontSize(13), color: IOS.tertiaryLabel, fontWeight: '500' }}>
-                  {t?.general || 'General'}
+                  {t('general', 'General')}
                 </Text>
               </View>
 
@@ -379,10 +383,10 @@ export default function Profile({ navigation }) {
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={{ fontSize: getFontSize(16), color: IOS.label, fontWeight: '500' }}>
-                        {t?.language || 'Language'}
+                        {t('language', 'Language')}
                       </Text>
                       <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, marginTop: 2 }}>
-                        {t?.languageSubtitle || 'Change application language'}
+                        {t('languageSubtitle', 'Change application language')}
                       </Text>
                     </View>
                   </View>
@@ -410,10 +414,10 @@ export default function Profile({ navigation }) {
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={{ fontSize: getFontSize(16), color: IOS.label, fontWeight: '500' }}>
-                        {t?.notifications || 'Notifications'}
+                        {t('notifications', 'Notifications')}
                       </Text>
                       <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, marginTop: 2 }}>
-                        {t?.notificationsSubtitle || 'Manage alerts and updates'}
+                        {t('notificationsSubtitle', 'Manage alerts and updates')}
                       </Text>
                     </View>
                   </View>
@@ -432,10 +436,10 @@ export default function Profile({ navigation }) {
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={{ fontSize: getFontSize(16), color: IOS.label, fontWeight: '500' }}>
-                        {t?.accessibility || 'Text Size'}
+                        {t('accessibility', 'Text Size')}
                       </Text>
                       <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, marginTop: 2 }}>
-                        {t?.accessibilitySubtitle || 'Adjust font sizes'}
+                        {t('accessibilitySubtitle', 'Adjust font sizes')}
                       </Text>
                     </View>
                   </View>
@@ -459,10 +463,10 @@ export default function Profile({ navigation }) {
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={{ fontSize: getFontSize(16), color: IOS.label, fontWeight: '500' }}>
-                        {t?.privacy || 'Privacy & Security'}
+                        {t('privacy', 'Privacy & Security')}
                       </Text>
                       <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, marginTop: 2 }}>
-                        {t?.privacySubtitle || 'Biometrics and PIN'}
+                        {t('privacySubtitle', 'Biometrics and PIN')}
                       </Text>
                     </View>
                   </View>
@@ -478,7 +482,7 @@ export default function Profile({ navigation }) {
               >
                 <Feather name="log-out" size={17} color={IOS.red} />
                 <Text style={{ fontSize: getFontSize(16), color: IOS.red, fontWeight: '600', marginLeft: 8 }}>
-                  {t?.logOut || 'Log Out'}
+                  {t('logOut', 'Log Out')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -490,7 +494,7 @@ export default function Profile({ navigation }) {
       <Modal visible={activeModal === 'language'} transparent animationType="slide">
         <View style={sheetOverlay}>
           <View style={sheetBody}>
-            {renderSheetHeader(t?.selectLanguage || 'Select Language')}
+            {renderSheetHeader(t('selectLanguage', 'Select Language'))}
 
             {['English', 'Sinhala', 'Tamil'].map((lang) => (
               <TouchableOpacity
@@ -513,12 +517,12 @@ export default function Profile({ navigation }) {
       <Modal visible={activeModal === 'accessibility'} transparent animationType="slide">
         <View style={sheetOverlay}>
           <View style={sheetBody}>
-            {renderSheetHeader(t?.textSizeDisplay || 'Text Size')}
+            {renderSheetHeader(t('textSizeDisplay', 'Text Size'))}
 
             {[
-              { label: t?.smallText || 'Small', value: 'Small' },
-              { label: t?.mediumText || 'Medium', value: 'Medium' },
-              { label: t?.largeText || 'Large', value: 'Large' },
+              { label: t('smallText', 'Small'), value: 'Small' },
+              { label: t('mediumText', 'Medium'), value: 'Medium' },
+              { label: t('largeText', 'Large'), value: 'Large' },
             ].map((item) => (
               <TouchableOpacity
                 key={item.value}
@@ -540,15 +544,15 @@ export default function Profile({ navigation }) {
       <Modal visible={activeModal === 'notifications'} transparent animationType="slide">
         <View style={sheetOverlay}>
           <View style={sheetBody}>
-            {renderSheetHeader(t?.notifications || 'Notifications')}
+            {renderSheetHeader(t('notifications', 'Notifications'))}
 
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14, backgroundColor: IOS.surface, borderRadius: 16, paddingHorizontal: 16 }}>
               <View style={{ flex: 1, marginRight: 12 }}>
                 <Text style={{ fontSize: getFontSize(16), color: IOS.label, fontWeight: '500' }}>
-                  {t?.queueAlerts || 'Queue Alerts'}
+                  {t('queueAlerts', 'Queue Alerts')}
                 </Text>
                 <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, marginTop: 2 }}>
-                  {t?.queueAlertsSubtitle || 'Get notified when your turn is near'}
+                  {t('queueAlertsSubtitle', 'Get notified when your turn is near')}
                 </Text>
               </View>
               <Switch
@@ -564,7 +568,7 @@ export default function Profile({ navigation }) {
               style={{ marginTop: 20, backgroundColor: IOS.blue, paddingVertical: 15, borderRadius: 14, alignItems: 'center' }}
             >
               <Text style={{ fontSize: getFontSize(16), color: '#fff', fontWeight: '600' }}>
-                {t?.savePreferences || 'Save Preferences'}
+                {t('savePreferences', 'Save Preferences')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -575,15 +579,15 @@ export default function Profile({ navigation }) {
       <Modal visible={activeModal === 'privacy'} transparent animationType="slide">
         <View style={sheetOverlay}>
           <View style={sheetBody}>
-            {renderSheetHeader(t?.privacy || 'Privacy & Security')}
+            {renderSheetHeader(t('privacy', 'Privacy & Security'))}
 
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14, backgroundColor: IOS.surface, borderRadius: 16, paddingHorizontal: 16 }}>
               <View style={{ flex: 1, marginRight: 12 }}>
                 <Text style={{ fontSize: getFontSize(16), color: IOS.label, fontWeight: '500' }}>
-                  {t?.biometricUnlock || 'Biometric Unlock'}
+                  {t('biometricUnlock', 'Biometric Unlock')}
                 </Text>
                 <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, marginTop: 2 }}>
-                  {t?.biometricSubtitle || 'Use Fingerprint / Face ID to unlock'}
+                  {t('biometricSubtitle', 'Use Fingerprint / Face ID to unlock')}
                 </Text>
               </View>
               <Switch
@@ -595,14 +599,14 @@ export default function Profile({ navigation }) {
 
             <TouchableOpacity
               onPress={() => {
-                Alert.alert('PIN Updated', 'Your security PIN settings have been refreshed.');
+                Alert.alert(t('pin_updated', 'PIN Updated'), t('pin_updated_msg', 'Your security PIN settings have been refreshed.'));
                 setActiveModal(null);
               }}
               activeOpacity={0.7}
               style={{ marginTop: 14, backgroundColor: IOS.fill, paddingVertical: 15, borderRadius: 14, alignItems: 'center' }}
             >
               <Text style={{ fontSize: getFontSize(16), color: IOS.blue, fontWeight: '600' }}>
-                {t?.changePin || 'Change Security PIN'}
+                {t('changePin', 'Change Security PIN')}
               </Text>
             </TouchableOpacity>
           </View>
