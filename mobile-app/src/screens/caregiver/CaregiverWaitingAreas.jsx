@@ -17,6 +17,31 @@ import CaregiverHeader from '../../components/caregiver/CaregiverHeader';
 import CaregiverBottomNav from '../../components/caregiver/CaregiverBottomNav';
 import { getWaitingAreas } from '../../services/caregiverApi';
 
+// iOS system colors (same palette as the patient screens)
+const IOS = {
+  blue: '#007AFF',
+  blueSoft: 'rgba(0,122,255,0.10)',
+  green: '#34C759',
+  greenSoft: 'rgba(52,199,89,0.14)',
+  greenDark: '#248A3D',
+  red: '#FF3B30',
+  label: '#1C1C1E',
+  secondaryLabel: '#636366',
+  tertiaryLabel: '#8E8E93',
+  chevron: '#C7C7CC',
+  fill: '#EFEFF4',
+  surface: '#F7F7FA',
+  groupedBg: '#F2F2F7',
+  white: '#FFFFFF'
+};
+const cardShadow = {
+  shadowColor: '#0B1B3A',
+  shadowOffset: { width: 0, height: 6 },
+  shadowOpacity: 0.07,
+  shadowRadius: 16,
+  elevation: 2
+};
+
 // Localized text for this new screen; no existing translation file is overwritten.
 const COPY = {
   en: {
@@ -121,7 +146,7 @@ export default function CaregiverWaitingAreas({ navigation }) {
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadAreas(true)} tintColor="#155EEF" />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadAreas(true)} tintColor={IOS.tertiaryLabel} colors={[IOS.blue]} />}
         >
           <View style={styles.headingRow}>
             <View style={styles.headingContent}>
@@ -135,16 +160,16 @@ export default function CaregiverWaitingAreas({ navigation }) {
               accessibilityLabel={T.refresh}
               disabled={loading || refreshing}
             >
-              <Ionicons name="refresh" size={19} color="#155EEF" />
+              <Ionicons name="refresh" size={20} color={IOS.blue} />
             </TouchableOpacity>
           </View>
 
           <View style={styles.searchBox}>
-            <Ionicons name="search-outline" size={19} color="#94A3B8" />
+            <Ionicons name="search-outline" size={20} color={IOS.tertiaryLabel} />
             <TextInput
               style={styles.searchInput}
               placeholder={T.search}
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor="#8E8E93"
               value={search}
               onChangeText={setSearch}
               returnKeyType="search"
@@ -153,7 +178,7 @@ export default function CaregiverWaitingAreas({ navigation }) {
             />
             {search.length > 0 && (
               <TouchableOpacity onPress={() => setSearch('')} accessibilityLabel="Clear search" accessibilityRole="button">
-                <Ionicons name="close-circle" size={19} color="#94A3B8" />
+                <Ionicons name="close-circle" size={20} color={IOS.chevron} />
               </TouchableOpacity>
             )}
           </View>
@@ -178,11 +203,11 @@ export default function CaregiverWaitingAreas({ navigation }) {
 
           {loading ? (
             <View style={styles.centerBlock}>
-              <ActivityIndicator size="large" color="#155EEF" />
+              <ActivityIndicator size="large" color={IOS.tertiaryLabel} />
             </View>
           ) : error ? (
             <View style={styles.messageCard}>
-              <Ionicons name="alert-circle-outline" size={31} color="#B91C1C" />
+              <Ionicons name="alert-circle-outline" size={34} color={IOS.red} />
               <Text style={styles.errorText}>{T.error}</Text>
               <TouchableOpacity style={styles.retryButton} onPress={() => loadAreas()}>
                 <Text style={styles.retryText}>{T.retry}</Text>
@@ -193,7 +218,7 @@ export default function CaregiverWaitingAreas({ navigation }) {
               <Text style={styles.countLabel}>{filteredAreas.length} {T.areas}</Text>
               {filteredAreas.length === 0 ? (
                 <View style={styles.messageCard}>
-                  <Ionicons name="location-outline" size={34} color="#94A3B8" />
+                  <Ionicons name="location-outline" size={36} color={IOS.tertiaryLabel} />
                   <Text style={styles.emptyTitle}>{T.empty}</Text>
                   <Text style={styles.emptyDetail}>{isFiltering ? T.emptyDetail : T.none}</Text>
                 </View>
@@ -204,7 +229,7 @@ export default function CaregiverWaitingAreas({ navigation }) {
                   <View style={styles.areaCard} key={area.waitingAreaId || area._id}>
                     <View style={styles.cardTop}>
                       <View style={styles.areaIcon}>
-                        <Ionicons name={iconForType(type)} size={22} color="#155EEF" />
+                        <Ionicons name={iconForType(type)} size={22} color={IOS.blue} />
                       </View>
                       <View style={styles.areaInfo}>
                         <Text style={styles.areaName}>{area.name}</Text>
@@ -217,17 +242,17 @@ export default function CaregiverWaitingAreas({ navigation }) {
                     </View>
 
                     <View style={styles.detailLine}>
-                      <Ionicons name="location-outline" size={17} color="#64748B" />
+                      <Ionicons name="location-outline" size={18} color={IOS.tertiaryLabel} />
                       <Text style={styles.detailText}>{area.location}</Text>
                     </View>
                     {landmark ? (
                       <View style={styles.detailLine}>
-                        <Ionicons name="navigate-outline" size={17} color="#64748B" />
+                        <Ionicons name="navigate-outline" size={18} color={IOS.tertiaryLabel} />
                         <Text style={styles.detailText}>{T.near}: {landmark}</Text>
                       </View>
                     ) : null}
                     <View style={styles.capacityRow}>
-                      <Ionicons name="people-outline" size={17} color="#155EEF" />
+                      <Ionicons name="people-outline" size={18} color={IOS.blue} />
                       <Text style={styles.capacityText}>{T.capacity}: {area.seating ?? '—'} {T.seats}</Text>
                     </View>
                   </View>
@@ -243,41 +268,41 @@ export default function CaregiverWaitingAreas({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  outer: { flex: 1, backgroundColor: '#EDF1F5' },
-  screen: { flex: 1, width: '100%', maxWidth: 430, alignSelf: 'center', backgroundColor: '#F9F7FF' },
+  outer: { flex: 1, backgroundColor: IOS.groupedBg },
+  screen: { flex: 1, width: '100%', maxWidth: 430, alignSelf: 'center', backgroundColor: IOS.groupedBg },
   scroll: { flex: 1 },
-  content: { paddingHorizontal: 18, paddingTop: 20, paddingBottom: 28 },
-  headingRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 18 },
+  content: { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 28 },
+  headingRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 18, paddingHorizontal: 4 },
   headingContent: { flex: 1 },
-  heading: { fontSize: 21, fontWeight: '800', color: '#111827' },
-  subtitle: { fontSize: 11, color: '#64748B', marginTop: 4, lineHeight: 16 },
-  refreshButton: { width: 41, height: 41, borderRadius: 12, backgroundColor: '#EAF1FF', justifyContent: 'center', alignItems: 'center', marginLeft: 12 },
-  searchBox: { minHeight: 48, borderWidth: 1, borderColor: '#D5DEEC', borderRadius: 12, backgroundColor: '#FFFFFF', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 13 },
-  searchInput: { flex: 1, color: '#111827', fontSize: 12, marginLeft: 8, minWidth: 0, paddingVertical: 10 },
-  filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 13, marginBottom: 19 },
-  filterChip: { borderWidth: 1, borderColor: '#C8D5EA', borderRadius: 20, backgroundColor: '#FFFFFF', paddingHorizontal: 12, paddingVertical: 9, minHeight: 36, justifyContent: 'center' },
-  filterChipActive: { borderColor: '#155EEF', backgroundColor: '#EDF4FF' },
-  filterText: { fontSize: 11, color: '#64748B', fontWeight: '700' },
-  filterTextActive: { color: '#155EEF' },
-  countLabel: { fontSize: 11, color: '#64748B', fontWeight: '700', marginBottom: 12 },
+  heading: { fontSize: 28, fontWeight: '700', letterSpacing: 0.3, color: IOS.label },
+  subtitle: { fontSize: 14, color: IOS.tertiaryLabel, marginTop: 4, lineHeight: 20 },
+  refreshButton: { width: 42, height: 42, borderRadius: 21, backgroundColor: IOS.blueSoft, justifyContent: 'center', alignItems: 'center', marginLeft: 12 },
+  searchBox: { minHeight: 50, borderRadius: 16, borderCurve: 'continuous', backgroundColor: IOS.fill, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14 },
+  searchInput: { flex: 1, color: IOS.label, fontSize: 15, marginLeft: 8, minWidth: 0, paddingVertical: 10 },
+  filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14, marginBottom: 20 },
+  filterChip: { borderRadius: 999, backgroundColor: IOS.fill, paddingHorizontal: 16, paddingVertical: 9, minHeight: 36, justifyContent: 'center' },
+  filterChipActive: { backgroundColor: IOS.blue },
+  filterText: { fontSize: 13, color: IOS.secondaryLabel, fontWeight: '500' },
+  filterTextActive: { color: '#FFFFFF', fontWeight: '600' },
+  countLabel: { fontSize: 13, color: IOS.tertiaryLabel, fontWeight: '600', marginBottom: 12, paddingHorizontal: 6, letterSpacing: 0.4 },
   centerBlock: { paddingTop: 70, alignItems: 'center' },
-  messageCard: { borderRadius: 16, borderWidth: 1, borderColor: '#E0E5EC', backgroundColor: '#FFFFFF', padding: 30, alignItems: 'center', gap: 12 },
-  errorText: { color: '#B91C1C', fontSize: 12, textAlign: 'center', lineHeight: 19 },
-  retryButton: { paddingVertical: 10, paddingHorizontal: 20, borderRadius: 10, backgroundColor: '#155EEF' },
-  retryText: { color: '#FFFFFF', fontWeight: '800' },
-  emptyTitle: { color: '#111827', fontSize: 14, fontWeight: '800', textAlign: 'center' },
-  emptyDetail: { color: '#64748B', fontSize: 11, lineHeight: 18, textAlign: 'center' },
-  areaCard: { borderWidth: 1, borderColor: '#E0E5EC', backgroundColor: '#FFFFFF', borderRadius: 16, padding: 15, marginBottom: 13 },
-  cardTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
-  areaIcon: { width: 45, height: 45, borderRadius: 12, backgroundColor: '#EAF1FF', alignItems: 'center', justifyContent: 'center' },
-  areaInfo: { flex: 1, marginLeft: 10, paddingRight: 4, minWidth: 0 },
-  areaName: { fontSize: 13, fontWeight: '800', color: '#111827' },
-  areaType: { fontSize: 10, color: '#64748B', marginTop: 4 },
-  activeBadge: { flexDirection: 'row', alignItems: 'center', borderRadius: 20, paddingHorizontal: 8, paddingVertical: 6, backgroundColor: '#ECFDF3' },
-  activeDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: '#16A34A', marginRight: 4 },
-  activeText: { color: '#15803D', fontSize: 9, fontWeight: '800' },
+  messageCard: { borderRadius: 26, borderCurve: 'continuous', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(60,60,67,0.12)', backgroundColor: IOS.white, padding: 30, alignItems: 'center', gap: 12, ...cardShadow },
+  errorText: { color: IOS.red, fontSize: 14, textAlign: 'center', lineHeight: 20 },
+  retryButton: { paddingVertical: 12, paddingHorizontal: 24, borderRadius: 16, borderCurve: 'continuous', backgroundColor: IOS.blue },
+  retryText: { color: '#FFFFFF', fontWeight: '600', fontSize: 15 },
+  emptyTitle: { color: IOS.label, fontSize: 17, fontWeight: '600', textAlign: 'center' },
+  emptyDetail: { color: IOS.tertiaryLabel, fontSize: 14, lineHeight: 20, textAlign: 'center' },
+  areaCard: { borderRadius: 26, borderCurve: 'continuous', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(60,60,67,0.12)', backgroundColor: IOS.white, padding: 16, marginBottom: 18, ...cardShadow },
+  cardTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
+  areaIcon: { width: 46, height: 46, borderRadius: 14, borderCurve: 'continuous', backgroundColor: IOS.blueSoft, alignItems: 'center', justifyContent: 'center' },
+  areaInfo: { flex: 1, marginLeft: 12, paddingRight: 4, minWidth: 0 },
+  areaName: { fontSize: 17, fontWeight: '600', letterSpacing: -0.2, color: IOS.label },
+  areaType: { fontSize: 12, color: IOS.tertiaryLabel, marginTop: 3 },
+  activeBadge: { flexDirection: 'row', alignItems: 'center', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5, backgroundColor: IOS.greenSoft },
+  activeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: IOS.green, marginRight: 5 },
+  activeText: { color: IOS.greenDark, fontSize: 11, fontWeight: '600' },
   detailLine: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 10 },
-  detailText: { flex: 1, fontSize: 11, lineHeight: 17, color: '#334155' },
-  capacityRow: { marginTop: 2, flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderRadius: 10, backgroundColor: '#F3F7FF' },
-  capacityText: { flex: 1, color: '#155EEF', fontSize: 11, fontWeight: '800' }
+  detailText: { flex: 1, fontSize: 14, lineHeight: 20, color: IOS.secondaryLabel },
+  capacityRow: { marginTop: 2, flexDirection: 'row', alignItems: 'center', gap: 8, padding: 14, borderRadius: 18, borderCurve: 'continuous', backgroundColor: IOS.surface },
+  capacityText: { flex: 1, color: IOS.blue, fontSize: 13, fontWeight: '600' }
 });

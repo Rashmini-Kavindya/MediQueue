@@ -7,8 +7,12 @@ import {
   StyleSheet
 } from 'react-native';
 
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+// Same colors as the patient tab bar
+const ACTIVE_COLOR = '#2563eb';
+const INACTIVE_COLOR = '#64748b';
 
 
 const tabs = [
@@ -21,8 +25,9 @@ const tabs = [
   {
     key: 'CaregiverQueue',
     label: 'Queue',
-    icon: 'people-outline',
-    activeIcon: 'people'
+    icon: 'format-list-numbered',
+    activeIcon: 'format-list-numbered',
+    iconSet: 'material'
   },
   {
     key: 'CaregiverAlerts',
@@ -54,6 +59,11 @@ export default function CaregiverBottomNav({
           const active =
             activeRoute === tab.key;
 
+          const IconComponent =
+            tab.iconSet === 'material'
+              ? MaterialCommunityIcons
+              : Ionicons;
+
           return (
             <TouchableOpacity
               key={tab.key}
@@ -66,17 +76,17 @@ export default function CaregiverBottomNav({
 
               <View style={styles.iconWrapper}>
 
-                <Ionicons
+                <IconComponent
                   name={
                     active
                       ? tab.activeIcon
                       : tab.icon
                   }
-                  size={19}
+                  size={24}
                   color={
                     active
-                      ? '#155EEF'
-                      : '#475569'
+                      ? ACTIVE_COLOR
+                      : INACTIVE_COLOR
                   }
                 />
 
@@ -98,11 +108,6 @@ export default function CaregiverBottomNav({
                 {tab.label}
               </Text>
 
-
-              {active && (
-                <View style={styles.activeLine} />
-              )}
-
             </TouchableOpacity>
           );
         })}
@@ -115,24 +120,25 @@ export default function CaregiverBottomNav({
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: '#FFFFFF'
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0'
   },
 
   nav: {
-    height: 62,
-
     flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
 
-    backgroundColor: '#FFFFFF',
+    paddingTop: 8,
+    paddingBottom: 4,
+    paddingHorizontal: 12,
 
-    borderTopWidth: 1,
-    borderTopColor: '#EBEEF3'
+    backgroundColor: '#FFFFFF'
   },
 
   tab: {
     flex: 1,
-
-    position: 'relative',
 
     alignItems: 'center',
     justifyContent: 'center'
@@ -145,40 +151,31 @@ const styles = StyleSheet.create({
   alertDot: {
     position: 'absolute',
 
-    top: -2,
+    top: -4,
     right: -4,
 
-    width: 6,
-    height: 6,
+    width: 12,
+    height: 12,
 
-    borderRadius: 3,
+    borderRadius: 6,
 
-    backgroundColor: '#EF4444'
+    backgroundColor: '#DC2626',
+
+    borderWidth: 2,
+    borderColor: '#FFFFFF'
   },
 
   label: {
-    marginTop: 3,
+    marginTop: 4,
 
-    fontSize: 9,
+    fontSize: 12,
+    fontWeight: '500',
 
-    color: '#475569'
+    color: '#64748b'
   },
 
   activeLabel: {
-    color: '#155EEF',
+    color: '#2563eb',
     fontWeight: '700'
-  },
-
-  activeLine: {
-    position: 'absolute',
-
-    top: 0,
-
-    width: 30,
-    height: 2,
-
-    borderRadius: 2,
-
-    backgroundColor: '#155EEF'
   }
 });

@@ -8,7 +8,7 @@ const { sendSms: sendSmsMessage } = require('../utils/sendSms');
 
 // true  = SMS only if the user enabled 'sms' in their alert preferences
 // false = SMS always goes for important events (booked / near / called)
-const SMS_REQUIRES_OPT_IN = true;
+const SMS_REQUIRES_OPT_IN = false;
 
 // Only these events are allowed to trigger an SMS
 const SMS_TYPES = ['booked', 'near', 'called', 'TURN_NEAR', 'YOUR_TURN'];

@@ -18,7 +18,15 @@ import {
 import { ROLES, AUDIENCE_ALL, confirmAction } from './messageMeta';
 
 const RED = '#EF4444';
+const GREEN = '#16A34A';
 const GROUPS = [AUDIENCE_ALL, ...ROLES];
+
+// Validation limits (adjust if the backend uses different limits)
+const USER_ID_MIN = 3;
+const USER_ID_MAX = 50;
+const TITLE_MAX = 80;
+const MESSAGE_MIN = 3;
+const MESSAGE_MAX = 500;
 
 const Label = ({ children }) => (
   <Text className="text-[10px] font-bold text-slate-400 tracking-wider uppercase mb-2 mt-4">
@@ -38,6 +46,21 @@ const Segment = ({ label, active, onPress }) => (
   </TouchableOpacity>
 );
 
+// Message shown under a field: red error or green "looks good"
+const FieldFeedback = ({ status, message }) => {
+  if (status !== 'error' && status !== 'valid') return null;
+  const color = status === 'error' ? RED : GREEN;
+  const icon = status === 'error' ? 'alert-circle' : 'checkmark-circle';
+  return (
+    <View className="flex-row items-center mt-1.5 px-1">
+      <Ionicons name={icon} size={14} color={color} />
+      <Text className="text-xs ml-1.5 flex-1" style={{ color }}>
+        {message}
+      </Text>
+    </View>
+  );
+};
+
 export default function MessageFormModal({ visible, onClose, onCreated }) {
   const [mode, setMode] = useState('user'); // 'user' | 'role'
   const [userId, setUserId] = useState('');
@@ -46,6 +69,12 @@ export default function MessageFormModal({ visible, onClose, onCreated }) {
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
+
+  // UI only: which fields the user has started typing in / left
+  const [touched, setTouched] = useState({});
+
+  const markTouched = (key) =>
+    setTouched((prev) => (prev[key] ? prev : { ...prev, [key]: true }));
 
   useEffect(() => {
     if (!visible) return;
@@ -56,7 +85,47 @@ export default function MessageFormModal({ visible, onClose, onCreated }) {
     setMessage('');
     setSending(false);
     setError('');
+    setTouched({});
   }, [visible]);
+
+  /* ---------------- Live validation (derived) ---------------- */
+
+  const cleanUserId = userId.trim();
+  const cleanTitle = title.trim();
+  const cleanMessage = message.trim();
+
+  let userIdState = { status: 'idle' };
+  if (!cleanUserId) {
+    if (touched.userId) userIdState = { status: 'error', message: 'Enter the user ID' };
+  } else if (/\s/.test(cleanUserId)) {
+    userIdState = { status: 'error', message: 'User ID cannot contain spaces' };
+  } else if (cleanUserId.length < USER_ID_MIN) {
+    userIdState = { status: 'error', message: `User ID must be at least ${USER_ID_MIN} characters` };
+  } else if (cleanUserId.length > USER_ID_MAX) {
+    userIdState = { status: 'error', message: `User ID must be at most ${USER_ID_MAX} characters` };
+  } else {
+    userIdState = { status: 'valid', message: 'Looks good' };
+  }
+
+  // Title is optional
+  let titleState = { status: 'idle' };
+  if (title.length > TITLE_MAX) {
+    titleState = { status: 'error', message: `Title must be at most ${TITLE_MAX} characters` };
+  }
+
+  let messageState = { status: 'idle' };
+  if (!cleanMessage) {
+    if (touched.message) messageState = { status: 'error', message: 'Message is required' };
+  } else if (cleanMessage.length < MESSAGE_MIN) {
+    messageState = { status: 'error', message: `Message must be at least ${MESSAGE_MIN} characters` };
+  } else if (message.length > MESSAGE_MAX) {
+    messageState = { status: 'error', message: `Message must be at most ${MESSAGE_MAX} characters` };
+  } else {
+    messageState = { status: 'valid', message: 'Looks good' };
+  }
+
+  const borderFor = (state) =>
+    state.status === 'error' ? 'border-red-300' : 'border-slate-200';
 
   const send = async () => {
     setSending(true);
@@ -77,12 +146,29 @@ export default function MessageFormModal({ visible, onClose, onCreated }) {
   };
 
   const handleSend = () => {
-    if (mode === 'user' && !userId.trim()) {
-      setError('Enter the user ID');
+    // Show every field's error state after a send attempt
+    setTouched({ userId: true, message: true });
+
+    if (mode === 'user') {
+      if (!cleanUserId) {
+        setError('Enter the user ID');
+        return;
+      }
+      if (userIdState.status === 'error') {
+        setError(userIdState.message);
+        return;
+      }
+    }
+    if (!cleanMessage) {
+      setError('Message is required');
       return;
     }
-    if (!message.trim()) {
-      setError('Message is required');
+    if (messageState.status === 'error') {
+      setError(messageState.message);
+      return;
+    }
+    if (titleState.status === 'error') {
+      setError(titleState.message);
       return;
     }
     setError('');
@@ -132,15 +218,23 @@ export default function MessageFormModal({ visible, onClose, onCreated }) {
             </View>
 
             {mode === 'user' ? (
-              <TextInput
-                value={userId}
-                onChangeText={setUserId}
-                autoCapitalize="none"
-                autoCorrect={false}
-                placeholder="User ID"
-                placeholderTextColor="#94A3B8"
-                className="mt-3 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-3 text-sm text-slate-900"
-              />
+              <View>
+                <TextInput
+                  value={userId}
+                  onChangeText={(v) => {
+                    setUserId(v);
+                    markTouched('userId');
+                    if (error) setError('');
+                  }}
+                  onBlur={() => markTouched('userId')}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  placeholder="User ID"
+                  placeholderTextColor="#94A3B8"
+                  className={`mt-3 bg-slate-50 border ${borderFor(userIdState)} rounded-xl px-3.5 py-3 text-sm text-slate-900`}
+                />
+                <FieldFeedback status={userIdState.status} message={userIdState.message} />
+              </View>
             ) : (
               <View className="flex-row flex-wrap mt-3">
                 {GROUPS.map((r) => (
@@ -167,23 +261,50 @@ export default function MessageFormModal({ visible, onClose, onCreated }) {
             <Label>Title (optional)</Label>
             <TextInput
               value={title}
-              onChangeText={setTitle}
+              onChangeText={(v) => {
+                setTitle(v);
+                if (error) setError('');
+              }}
               placeholder="Announcement"
               placeholderTextColor="#94A3B8"
-              className="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-3 text-sm text-slate-900"
+              className={`bg-slate-50 border ${borderFor(titleState)} rounded-xl px-3.5 py-3 text-sm text-slate-900`}
             />
+            <View className="flex-row items-start justify-between">
+              <View className="flex-1">
+                <FieldFeedback status={titleState.status} message={titleState.message} />
+              </View>
+              <Text className="text-[11px] text-slate-400 mt-1.5 ml-2">
+                {title.length}/{TITLE_MAX}
+              </Text>
+            </View>
 
             <Label>Message</Label>
             <TextInput
               value={message}
-              onChangeText={setMessage}
+              onChangeText={(v) => {
+                setMessage(v);
+                markTouched('message');
+                if (error) setError('');
+              }}
+              onBlur={() => markTouched('message')}
               multiline
               textAlignVertical="top"
               placeholder="Type your message"
               placeholderTextColor="#94A3B8"
-              className="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-3 text-sm text-slate-900"
+              className={`bg-slate-50 border ${borderFor(messageState)} rounded-xl px-3.5 py-3 text-sm text-slate-900`}
               style={{ minHeight: 96 }}
             />
+            <View className="flex-row items-start justify-between">
+              <View className="flex-1">
+                <FieldFeedback status={messageState.status} message={messageState.message} />
+              </View>
+              <Text
+                className="text-[11px] mt-1.5 ml-2"
+                style={{ color: message.length > MESSAGE_MAX ? RED : '#94A3B8' }}
+              >
+                {message.length}/{MESSAGE_MAX}
+              </Text>
+            </View>
 
             <Text className="text-[11px] text-slate-400 mt-2">
               Delivered in the app only. SMS is used just for token booked, turn approaching and

@@ -25,6 +25,37 @@ import {
   unlinkPatient
 } from '../../services/caregiverApi';
 import RemovePatientModal from '../../components/caregiver/RemovePatientModal';
+
+// iOS system colors (same palette as the patient screens)
+const IOS = {
+  blue: '#007AFF',
+  blueSoft: 'rgba(0,122,255,0.10)',
+  green: '#34C759',
+  greenSoft: 'rgba(52,199,89,0.14)',
+  greenDark: '#248A3D',
+  orange: '#FF9500',
+  orangeSoft: 'rgba(255,149,0,0.14)',
+  red: '#FF3B30',
+  redSoft: 'rgba(255,59,48,0.08)',
+  label: '#1C1C1E',
+  secondaryLabel: '#636366',
+  tertiaryLabel: '#8E8E93',
+  fill: '#EFEFF4',
+  surface: '#F7F7FA',
+  groupedBg: '#F2F2F7',
+  white: '#FFFFFF'
+};
+
+const cardShadow = {
+  shadowColor: '#0B1B3A',
+  shadowOffset: { width: 0, height: 6 },
+  shadowOpacity: 0.07,
+  shadowRadius: 16,
+  elevation: 2
+};
+const squircle = { borderCurve: 'continuous' };
+const edge = { borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(60,60,67,0.12)' };
+
 // Small, screen-specific translations avoid changing the shared caregiver translations.
 const QUICK_ACCESS_LABELS = {
   en: { title: 'QUICK ACCESS', add: 'Add Patient', waiting: 'Waiting Areas' },
@@ -190,7 +221,8 @@ export default function CaregiverDashboard({
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              tintColor="#155EEF"
+              tintColor={IOS.tertiaryLabel}
+              colors={[IOS.blue]}
             />
           }
         >
@@ -217,7 +249,7 @@ export default function CaregiverDashboard({
                 onPress={() => navigation.navigate('LinkPatient')}
               >
                 <View style={styles.quickIconCircleAdd}>
-                  <Ionicons name="person-add-outline" size={17} color="#FFFFFF" />
+                  <Ionicons name="person-add-outline" size={19} color="#FFFFFF" />
                 </View>
                 <Text style={styles.quickAddText} numberOfLines={2}>{quickLabels.add}</Text>
               </TouchableOpacity>
@@ -229,7 +261,7 @@ export default function CaregiverDashboard({
                 onPress={() => navigation.navigate('CaregiverWaitingAreas')}
               >
                 <View style={styles.quickIconCircleWaiting}>
-                  <Ionicons name="cafe-outline" size={17} color="#155EEF" />
+                  <Ionicons name="cafe-outline" size={19} color={IOS.blue} />
                 </View>
                 <Text style={styles.quickWaitingText} numberOfLines={2}>{quickLabels.waiting}</Text>
               </TouchableOpacity>
@@ -238,7 +270,7 @@ export default function CaregiverDashboard({
 
           {!!successMessage && (
             <View style={styles.successBanner}>
-              <Ionicons name="checkmark-circle-outline" size={19} color="#047857" />
+              <Ionicons name="checkmark-circle-outline" size={20} color={IOS.greenDark} />
               <Text style={styles.successBannerText}>{successMessage}</Text>
               <TouchableOpacity
                 accessibilityRole="button"
@@ -246,7 +278,7 @@ export default function CaregiverDashboard({
                 onPress={() => setSuccessMessage('')}
                 style={styles.successBannerClose}
               >
-                <Ionicons name="close" size={18} color="#047857" />
+                <Ionicons name="close" size={18} color={IOS.greenDark} />
               </TouchableOpacity>
             </View>
           )}
@@ -254,7 +286,7 @@ export default function CaregiverDashboard({
             <View style={styles.loadingContainer}>
               <ActivityIndicator
                 size="large"
-                color="#155EEF"
+                color={IOS.tertiaryLabel}
               />
             </View>
           ) : error ? (
@@ -276,8 +308,8 @@ export default function CaregiverDashboard({
               <View style={styles.addCircle}>
                 <Ionicons
                   name="add"
-                  size={21}
-                  color="#155EEF"
+                  size={24}
+                  color={IOS.blue}
                 />
               </View>
               <Text style={styles.addTitle}>
@@ -330,8 +362,8 @@ export default function CaregiverDashboard({
                           <View style={styles.checkinRow}>
                             <Ionicons
                               name="time-outline"
-                              size={10}
-                              color="#64748B"
+                              size={12}
+                              color={IOS.tertiaryLabel}
                             />
                             <Text style={styles.checkinText}>
                               {link.patient
@@ -374,7 +406,7 @@ export default function CaregiverDashboard({
                           accessibilityLabel={`Manage ${link.patient?.firstName || 'patient'}`}
                           onPress={() => openManagePatient(link)}
                         >
-                          <Ionicons name="ellipsis-vertical" size={20} color="#475569" />
+                          <Ionicons name="ellipsis-vertical" size={20} color={IOS.secondaryLabel} />
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -417,8 +449,8 @@ export default function CaregiverDashboard({
                           <View style={styles.opdLeft}>
                             <Ionicons
                               name="medical-outline"
-                              size={12}
-                              color="#334155"
+                              size={14}
+                              color={IOS.secondaryLabel}
                             />
                             <Text style={styles.opdText}>
                               {queue.liveQueue
@@ -449,7 +481,7 @@ export default function CaregiverDashboard({
                           </Text>
                           <Ionicons
                             name="arrow-forward"
-                            size={14}
+                            size={16}
                             color="#FFFFFF"
                           />
                         </TouchableOpacity>
@@ -493,98 +525,109 @@ export default function CaregiverDashboard({
 }
 const styles = StyleSheet.create({
   quickAccessSection: {
-    marginTop: 17,
+    marginTop: 18,
     marginBottom: 0
   },
   quickAccessHeading: {
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 0.8,
-    color: '#64748B',
-    marginBottom: 7
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.6,
+    color: IOS.tertiaryLabel,
+    marginBottom: 8,
+    paddingHorizontal: 4
   },
   quickAccessRow: {
     flexDirection: 'row',
-    gap: 8
+    gap: 10
   },
   quickAccessButton: {
     flex: 1,
     minWidth: 0,
-    minHeight: 44,
-    paddingHorizontal: 9,
-    paddingVertical: 7,
-    borderRadius: 9,
+    minHeight: 54,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 18,
+    borderCurve: 'continuous',
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center'
   },
   quickAddButton: {
-    backgroundColor: '#155EEF'
+    backgroundColor: IOS.blue,
+    shadowColor: IOS.blue,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.28,
+    shadowRadius: 12,
+    elevation: 4
   },
   quickWaitingButton: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#BFD3FF'
+    backgroundColor: IOS.white,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(60,60,67,0.12)',
+    ...cardShadow
   },
   quickIconCircleAdd: {
-    marginRight: 7
+    marginRight: 8
   },
   quickIconCircleWaiting: {
-    marginRight: 7
+    marginRight: 8
   },
   quickAddText: {
-    fontSize: 10,
-    lineHeight: 13,
-    fontWeight: '700',
+    fontSize: 14,
+    lineHeight: 18,
+    fontWeight: '600',
     color: '#FFFFFF',
     textAlign: 'center',
     flexShrink: 1
   },
   quickWaitingText: {
-    fontSize: 10,
-    lineHeight: 13,
-    fontWeight: '700',
-    color: '#155EEF',
+    fontSize: 14,
+    lineHeight: 18,
+    fontWeight: '600',
+    color: IOS.blue,
     textAlign: 'center',
     flexShrink: 1
   },
   outer: {
     flex: 1,
-    backgroundColor: '#EDF1F5'
+    backgroundColor: IOS.groupedBg
   },
   screen: {
     flex: 1,
     width: '100%',
     maxWidth: 430,
     alignSelf: 'center',
-    backgroundColor: '#F9F7FF'
+    backgroundColor: IOS.groupedBg
   },
   scroll: {
     flex: 1
   },
   content: {
-    paddingHorizontal: 18,
-    paddingTop: 21,
+    paddingHorizontal: 16,
+    paddingTop: 20,
     paddingBottom: 26
   },
   welcomeLabel: {
-    fontSize: 8,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-    color: '#64748B'
+    fontSize: 13,
+    fontWeight: '500',
+    color: IOS.tertiaryLabel,
+    paddingHorizontal: 4
   },
   welcomeName: {
-    marginTop: 3,
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#111827'
+    marginTop: 2,
+    fontSize: 26,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+    color: IOS.label,
+    paddingHorizontal: 4
   },
   updatedRow: {
-    marginTop: 20
+    marginTop: 6,
+    paddingHorizontal: 4
   },
   updatedText: {
-    fontSize: 9,
-    color: '#94A3B8'
+    fontSize: 12,
+    color: IOS.tertiaryLabel
   },
   loadingContainer: {
     paddingVertical: 70,
@@ -592,18 +635,18 @@ const styles = StyleSheet.create({
   },
   successBanner: {
     marginTop: 14,
-    borderWidth: 1,
-    borderColor: '#BBF7D0',
-    backgroundColor: '#ECFDF5',
-    borderRadius: 11,
+    backgroundColor: IOS.greenSoft,
+    borderRadius: 18,
+    borderCurve: 'continuous',
     paddingVertical: 11,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     flexDirection: 'row',
     alignItems: 'center'
   },
   successBannerText: {
-    color: '#065F46',
-    fontSize: 12,
+    color: IOS.greenDark,
+    fontSize: 13,
+    fontWeight: '500',
     flex: 1,
     marginLeft: 8,
     lineHeight: 18
@@ -616,65 +659,74 @@ const styles = StyleSheet.create({
   },
   errorBox: {
     marginTop: 15,
-    padding: 13,
-    borderRadius: 12,
-    backgroundColor: '#FEF2F2'
+    padding: 14,
+    borderRadius: 18,
+    borderCurve: 'continuous',
+    backgroundColor: IOS.redSoft
   },
   errorText: {
-    fontSize: 10,
-    color: '#B91C1C'
+    fontSize: 13,
+    color: IOS.red
   },
   activeHeader: {
-    marginTop: 21,
+    marginTop: 24,
     marginBottom: 12,
+    paddingHorizontal: 4,
     flexDirection: 'row',
     alignItems: 'center'
   },
   activeTitle: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#111827'
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+    color: IOS.label
   },
   activeCountBadge: {
-    marginLeft: 6,
-    paddingHorizontal: 6,
+    marginLeft: 8,
+    paddingHorizontal: 10,
     paddingVertical: 3,
-    borderRadius: 10,
-    backgroundColor: '#DCEEFE'
+    borderRadius: 999,
+    backgroundColor: IOS.blueSoft
   },
   activeCountText: {
-    fontSize: 8,
+    fontSize: 12,
     fontWeight: '600',
-    color: '#155EEF'
+    color: IOS.blue
   },
   headerAddButton: {
     marginLeft: 'auto',
-    paddingHorizontal: 11,
-    minHeight: 32,
-    borderRadius: 9,
-    backgroundColor: '#155EEF',
+    paddingHorizontal: 12,
+    minHeight: 34,
+    borderRadius: 12,
+    backgroundColor: IOS.blue,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center'
   },
   headerAddButtonText: {
     marginLeft: 4,
-    fontSize: 10,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '600',
     color: '#FFFFFF'
   },
   updatedSmall: {
     marginLeft: 'auto',
-    fontSize: 8,
-    color: '#94A3B8'
+    fontSize: 11,
+    color: IOS.tertiaryLabel
   },
   patientCard: {
-    padding: 15,
-    marginBottom: 16,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#E0E5EC',
-    backgroundColor: '#FFFFFF'
+    padding: 16,
+    marginBottom: 18,
+    borderRadius: 26,
+    borderCurve: 'continuous',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(60,60,67,0.12)',
+    backgroundColor: IOS.white,
+    shadowColor: '#0B1B3A',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.07,
+    shadowRadius: 16,
+    elevation: 2
   },
   patientTop: {
     flexDirection: 'row',
@@ -693,126 +745,132 @@ const styles = StyleSheet.create({
     marginLeft: 6
   },
   patientMenuButton: {
-    width: 32,
-    height: 34,
-    marginLeft: 5,
+    width: 34,
+    height: 36,
+    marginLeft: 6,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 8,
-    backgroundColor: '#F8FAFC'
+    borderRadius: 12,
+    borderCurve: 'continuous',
+    backgroundColor: IOS.fill
   },
   avatar: {
-    width: 39,
-    height: 39,
-    marginRight: 10,
-    borderRadius: 10,
+    width: 44,
+    height: 44,
+    marginRight: 12,
+    borderRadius: 13,
+    borderCurve: 'continuous',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#D7ECFF'
+    backgroundColor: IOS.blueSoft
   },
   avatarText: {
-    color: '#0757D8',
-    fontSize: 12,
-    fontWeight: '800'
+    color: IOS.blue,
+    fontSize: 15,
+    fontWeight: '700'
   },
   patientName: {
-    color: '#111827',
-    fontSize: 12,
-    fontWeight: '800'
+    color: IOS.label,
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: -0.2
   },
   checkinRow: {
-    marginTop: 4,
+    marginTop: 3,
     flexDirection: 'row',
     alignItems: 'center'
   },
   checkinText: {
-    marginLeft: 3,
-    fontSize: 8,
-    color: '#64748B'
+    marginLeft: 4,
+    fontSize: 12,
+    color: IOS.tertiaryLabel
   },
   waitingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 7,
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 15,
-    backgroundColor: '#FFF7E6'
+    borderRadius: 999,
+    backgroundColor: IOS.orangeSoft
   },
   verifiedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 7,
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 15,
-    backgroundColor: '#ECFDF3'
+    borderRadius: 999,
+    backgroundColor: IOS.greenSoft
   },
   orangeDot: {
-    width: 4,
-    height: 4,
-    marginRight: 4,
-    borderRadius: 2,
-    backgroundColor: '#F59E0B'
+    width: 6,
+    height: 6,
+    marginRight: 5,
+    borderRadius: 3,
+    backgroundColor: IOS.orange
   },
   greenDot: {
-    width: 4,
-    height: 4,
-    marginRight: 4,
-    borderRadius: 2,
-    backgroundColor: '#16A34A'
+    width: 6,
+    height: 6,
+    marginRight: 5,
+    borderRadius: 3,
+    backgroundColor: IOS.green
   },
   waitingText: {
-    color: '#B45309',
-    fontSize: 8,
-    fontWeight: '700'
+    color: IOS.orange,
+    fontSize: 11,
+    fontWeight: '600'
   },
   verifiedText: {
-    color: '#15803D',
-    fontSize: 8,
-    fontWeight: '700'
+    color: IOS.greenDark,
+    fontSize: 11,
+    fontWeight: '600'
   },
   statsRow: {
-    marginTop: 14,
+    marginTop: 16,
     flexDirection: 'row',
     justifyContent: 'space-between'
   },
   statBox: {
-    width: '31%',
-    minHeight: 58,
-    padding: 9,
-    borderRadius: 9,
-    backgroundColor: '#F7F9FC'
+    width: '31.5%',
+    minHeight: 68,
+    padding: 11,
+    borderRadius: 18,
+    borderCurve: 'continuous',
+    backgroundColor: IOS.surface
   },
   statLabel: {
-    color: '#94A3B8',
-    fontSize: 7,
-    fontWeight: '700'
+    color: IOS.tertiaryLabel,
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 0.4
   },
   statNumber: {
-    marginTop: 7,
-    color: '#0F172A',
-    fontSize: 15,
-    fontWeight: '800'
+    marginTop: 8,
+    color: IOS.label,
+    fontSize: 18,
+    fontWeight: '700'
   },
   statNumberBlue: {
-    marginTop: 7,
-    color: '#155EEF',
-    fontSize: 15,
-    fontWeight: '800'
+    marginTop: 8,
+    color: IOS.blue,
+    fontSize: 18,
+    fontWeight: '700'
   },
   smallUnit: {
-    color: '#64748B',
-    fontSize: 7,
+    color: IOS.secondaryLabel,
+    fontSize: 10,
     fontWeight: '500'
   },
   opdBar: {
-    minHeight: 37,
+    minHeight: 44,
     marginTop: 10,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderRadius: 8,
-    backgroundColor: '#F8FAFC'
+    borderRadius: 16,
+    borderCurve: 'continuous',
+    backgroundColor: IOS.surface
   },
   opdLeft: {
     flexDirection: 'row',
@@ -820,69 +878,77 @@ const styles = StyleSheet.create({
     flex: 1
   },
   opdText: {
-    marginLeft: 5,
-    fontSize: 8,
-    color: '#334155',
+    marginLeft: 6,
+    fontSize: 13,
+    color: IOS.label,
     fontWeight: '600'
   },
   roomText: {
-    fontSize: 7,
-    color: '#94A3B8'
+    fontSize: 12,
+    color: IOS.tertiaryLabel
   },
   liveQueueButton: {
-    height: 41,
-    marginTop: 10,
-    borderRadius: 9,
+    height: 48,
+    marginTop: 12,
+    borderRadius: 16,
+    borderCurve: 'continuous',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#0757D8'
+    backgroundColor: IOS.blue,
+    shadowColor: IOS.blue,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.28,
+    shadowRadius: 12,
+    elevation: 4
   },
   liveQueueText: {
-    marginRight: 6,
+    marginRight: 8,
     color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: '700'
+    fontSize: 15,
+    fontWeight: '600'
   },
   noQueueBox: {
-    marginTop: 12,
-    paddingVertical: 11,
-    borderRadius: 8,
-    backgroundColor: '#F8FAFC'
+    marginTop: 14,
+    paddingVertical: 13,
+    borderRadius: 16,
+    borderCurve: 'continuous',
+    backgroundColor: IOS.surface
   },
   noQueueText: {
     textAlign: 'center',
-    fontSize: 9,
-    color: '#64748B'
+    fontSize: 13,
+    color: IOS.tertiaryLabel
   },
   emptyAddCard: {
-    minHeight: 145,
-    marginTop: 2,
-    borderWidth: 1,
+    minHeight: 160,
+    marginTop: 4,
+    borderWidth: 1.5,
     borderStyle: 'dashed',
-    borderColor: '#CBD5E1',
-    borderRadius: 14,
+    borderColor: 'rgba(0,122,255,0.35)',
+    borderRadius: 26,
+    borderCurve: 'continuous',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF'
+    backgroundColor: IOS.white
   },
   addCircle: {
-    width: 37,
-    height: 37,
-    borderRadius: 19,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#EAF1FF'
+    backgroundColor: IOS.blueSoft
   },
   addTitle: {
-    marginTop: 9,
-    fontSize: 9,
-    fontWeight: '800',
-    color: '#111827'
+    marginTop: 10,
+    fontSize: 15,
+    fontWeight: '600',
+    color: IOS.label
   },
   addSubtitle: {
-    marginTop: 6,
-    fontSize: 8,
-    color: '#94A3B8'
+    marginTop: 4,
+    fontSize: 13,
+    color: IOS.tertiaryLabel
   }
 });
