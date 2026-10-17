@@ -221,10 +221,7 @@ exports.sendMessageToAdmin = async (req, res) => {
   }
 };
 
-// GET /api/notifications/my-messages
-// Messages I have sent to the admins (newest first).
-// Every admin has their own copy, so copies are grouped by broadcastId.
-// readCount = how many admins have opened it (used for the "Seen" status).
+
 exports.getMySentMessages = async (req, res) => {
   try {
     const senderId = getUserId(req);
@@ -264,9 +261,6 @@ exports.getMySentMessages = async (req, res) => {
   }
 };
 
-// PUT /api/notifications/my-messages/:broadcastId  (same body as sending)
-// Edits the message for every admin copy. Only the original sender can do this.
-// The copies are marked unread again so the admins notice the change.
 exports.editSentMessage = async (req, res) => {
   try {
     const senderId = getUserId(req);

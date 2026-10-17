@@ -236,9 +236,6 @@ exports.login = async (req, res) => {
   }
 };
 
-// ---------- 3. SEND / REQUEST OTP ----------
-// channel = 'sms'   -> code goes to the phone number (register, forgot password by phone)
-// channel = 'email' -> code goes to the email (forgot password by email)
 exports.sendOtp = async (req, res) => {
   try {
     const { phone, email, channel } = req.body;

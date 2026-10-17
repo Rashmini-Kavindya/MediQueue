@@ -24,14 +24,9 @@ const notificationSchema = new mongoose.Schema({
     required: true,
     default: 'app'
   },
-
-  // Set when an admin sends one message to a group (a role or everyone).
-  // Every recipient still gets their own copy; the admin list groups them by this id.
   broadcastId: { type: String, index: true },
   audience: { type: String }, // 'all' | 'role:<role>' | 'user'
 
-  // system = auto generated (queue events), admin = created manually from admin panel,
-  // user = message sent by a user to the admins
   source: { type: String, enum: ['system', 'admin', 'user'], default: 'system' },
 
   // Only filled when source === 'user' (who sent the message to the admins)
