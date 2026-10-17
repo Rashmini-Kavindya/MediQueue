@@ -12,6 +12,7 @@ import CaregiverNavigator from './CaregiverNavigator';
 import RequestNewToken from '../screens/patient/RequestNewToken';
 import ConfirmNewToken from '../screens/patient/ConfirmNewToken';
 import ChatbotScreen from '../screens/patient/ChatbotScreen';
+import PrescriptionsScreen from '../screens/patient/Prescriptions';
 import StaffNavigator from './Staffnavigator';
 
 const Stack = createNativeStackNavigator();
@@ -52,6 +53,7 @@ export default function AppNavigator() {
           <Stack.Screen name="RequestNewToken" component={RequestNewToken} />
           <Stack.Screen name="ConfirmNewToken" component={ConfirmNewToken} />
           <Stack.Screen name="Chatbot" component={ChatbotScreen} />
+          <Stack.Screen name="Prescriptions" component={PrescriptionsScreen} />
         </Stack.Navigator>
       ) : isCaregiver ? (
         // 5. Caregiver

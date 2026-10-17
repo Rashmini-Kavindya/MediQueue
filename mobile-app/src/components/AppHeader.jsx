@@ -33,6 +33,14 @@ const AppHeader = ({
     }
   };
 
+  const handlePrescriptionPress = () => {
+    if (onPrescriptionPress) {
+      onPrescriptionPress();
+    } else {
+      navigation?.navigate('Prescriptions');
+    }
+  };
+
   const handleProfileClick = () => {
     setDropdownVisible(!dropdownVisible);
     if (onProfilePress) {
@@ -100,7 +108,7 @@ const AppHeader = ({
         {/* Prescriptions */}
         <TouchableOpacity
           style={styles.iconButton}
-          onPress={onPrescriptionPress}
+          onPress={handlePrescriptionPress}
           activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel="Open prescriptions"

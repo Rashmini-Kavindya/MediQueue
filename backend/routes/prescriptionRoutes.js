@@ -8,6 +8,7 @@ const {
 
 const {
   createPrescription,
+  getMyPrescriptions,
   getPrescriptionById,
   getPrescriptionByConsultation
 } = require('../controllers/prescriptionController');
@@ -19,6 +20,8 @@ router.post(
   roleGuard(['staff', 'admin']),
   createPrescription
 );
+
+router.get('/my', verifyToken, roleGuard(['patient']), getMyPrescriptions);
 
 router.get(
   '/:prescriptionId',

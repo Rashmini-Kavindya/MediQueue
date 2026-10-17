@@ -714,9 +714,7 @@ export default function Alerts({ navigation }) {
         onNotificationPress={() => {
           // දැනට Alerts page එකේදීම සිටී
         }}
-        onPrescriptionPress={() => {
-          console.log('Prescription icon pressed');
-        }}
+        onPrescriptionPress={() => navigation?.navigate('Prescriptions')}
       />
 
       <ScrollView
