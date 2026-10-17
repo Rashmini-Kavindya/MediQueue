@@ -85,6 +85,18 @@ exports.createPrescription = async (req, res) => {
   }
 };
 
+// Patients can only see prescriptions attached to their own patient account.
+exports.getMyPrescriptions = async (req, res) => {
+  try {
+    const patientId = req.user.patientId || req.user.userId;
+    const prescriptions = await Prescription.find({ patientId }).sort({ prescribedAt: -1 });
+    return res.status(200).json({ success: true, data: prescriptions });
+  } catch (error) {
+    console.error('Get patient prescriptions error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to get prescriptions' });
+  }
+};
+
 exports.getPrescriptionById = async (req, res) => {
   try {
     const { prescriptionId } = req.params;

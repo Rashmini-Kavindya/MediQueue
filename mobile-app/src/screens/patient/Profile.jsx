@@ -235,9 +235,7 @@ export default function Profile({ navigation }) {
       <AppHeader
         userName={patientName}
         onNotificationPress={() => navigation?.navigate('Alerts')}
-        onPrescriptionPress={() => {
-          console.log('Prescription icon pressed');
-        }}
+        onPrescriptionPress={() => navigation?.navigate('Prescriptions')}
       />
 
       <ScrollView

@@ -165,9 +165,7 @@ export default function LiveQueue({ navigation, route }) {
       <AppHeader
         userName={user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : 'User'}
         onNotificationPress={() => navigation?.navigate('Alerts')}
-        onPrescriptionPress={() => {
-          console.log('Prescription icon pressed');
-        }}
+        onPrescriptionPress={() => navigation?.navigate('Prescriptions')}
       />
 
       <ScrollView
