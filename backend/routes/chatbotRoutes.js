@@ -15,5 +15,6 @@ router.post('/suggest', (req, res, next) => {
 router.get('/history', verifyToken, chatbotController.getChatHistory);
 router.delete('/history/:logId', verifyToken, chatbotController.deleteChatLog);
 router.delete('/history', verifyToken, chatbotController.clearAllHistory);
+router.patch('/history/:logId', verifyToken, chatbotController.renameChatLog);
 
 module.exports = router;

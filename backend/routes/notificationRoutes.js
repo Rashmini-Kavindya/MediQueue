@@ -8,16 +8,15 @@ router.use(verifyToken);
 
 router.get('/', notificationController.getNotifications);
 
-router.post('/', notificationController.createNotification);
+// Messages I sent to the admins (keep these above the '/:id' routes)
+router.get('/my-messages', notificationController.getMySentMessages);
+router.put('/my-messages/:broadcastId', notificationController.editSentMessage);
+router.delete('/my-messages/:broadcastId', notificationController.deleteSentMessage);
 
-router.put(
-  '/:id/read',
-  notificationController.markAsRead
-);
-
-router.delete(
-  '/:id',
-  notificationController.deleteNotification
-);
+router.post('/message-admin', notificationController.sendMessageToAdmin);
+router.put('/read-all', notificationController.markAllAsRead);
+router.delete('/clear-all', notificationController.clearAll);
+router.put('/:id/read', notificationController.markAsRead);
+router.delete('/:id', notificationController.deleteNotification);
 
 module.exports = router;

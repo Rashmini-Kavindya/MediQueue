@@ -2,7 +2,11 @@ const Token = require('../models/Token');
 const OPD = require('../models/OPD');
 const CaregiverLink = require('../models/CaregiverLink');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
+const NotificationLog = require('../models/NotificationLog');
+const { emitQueueUpdate } = require('../services/queueEvents');
 const { generateId } = require('../utils/id');
+const { notifyTokenBooked } = require('../services/notificationService');
 
 // 1. BOOK A TOKEN
 exports.bookToken = async (req, res) => {
@@ -31,7 +35,7 @@ exports.bookToken = async (req, res) => {
         });
       }
 
-      // Hibaගේ CaregiverLink model එකෙන් link එක active සහ verified ද කියා පරීක්ෂා කිරීම
+      // CaregiverLink model එකෙන් link එක active සහ verified ද කියා පරීක්ෂා කිරීම
       const activeLink = await CaregiverLink.findOne({
         caregiverId: caregiver.caregiverId,
         patientId: targetPatientId,
@@ -102,6 +106,18 @@ exports.bookToken = async (req, res) => {
     });
 
     await newToken.save();
+    await emitQueueUpdate(req.io, newToken.opdId, newToken);
+
+    // --- 🔔 BOOKING NOTIFICATION ---
+    // In-app notification always; SMS only if the user enabled SMS in alert preferences.
+    // Runs in the background so a notification problem never fails the booking.
+    notifyTokenBooked({
+      userId,
+      tokenId: newToken.tokenId,
+      tokenNo: newToken.tokenNo,
+      opdName: opd.name
+    }).catch((err) => console.error('Booking notification failed:', err.message));
+    // ----------------------------------------------
 
     res.status(201).json({
       success: true,
@@ -161,7 +177,6 @@ exports.cancelToken = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Token not found' });
     }
 
-    // --- 🛑 AUTHORIZATION CHECK ---
     if (token.userId !== userId && !['admin', 'staff'].includes(userRole)) {
       return res.status(403).json({
         success: false,
@@ -174,6 +189,7 @@ exports.cancelToken = async (req, res) => {
     token.cancelReason = cancelReason || 'Cancelled by user';
 
     await token.save();
+    await emitQueueUpdate(req.io, token.opdId, token);
 
     res.status(200).json({ success: true, data: token, message: 'Token cancelled successfully' });
   } catch (error) {
@@ -181,7 +197,7 @@ exports.cancelToken = async (req, res) => {
   }
 };
 
-// 5. PUBLIC TRACKING (Login නොවී trackingCode එකෙන් status බලන්න)
+// 5. PUBLIC TRACKING
 exports.trackTokenStatus = async (req, res) => {
   try {
     const { trackingCode } = req.params;
@@ -194,7 +210,6 @@ exports.trackTokenStatus = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Invalid tracking code or Token not found' });
     }
 
-    // දැනට කීවෙනි Token එකද පෝලිමේ යන්නේ කියා සොයාගැනීම
     const currentCallingToken = await Token.findOne({
       opdId: token.opdId,
       queueDate: token.queueDate,
@@ -217,20 +232,65 @@ exports.trackTokenStatus = async (req, res) => {
   }
 };
 
-// 6. GET OPD QUEUE (Staff Console / Patient Live Queue එක සඳහා)
+// 6. GET OPD QUEUE — staff consultation screen
 exports.getOpdQueue = async (req, res) => {
   try {
     const { opdId } = req.params;
-    const queueDate = req.query.queueDate || new Date().toISOString().split('T')[0];
+    const queueDate =
+      req.query.queueDate || new Date().toISOString().split('T')[0];
 
-    const queue = await Token.find({ opdId, queueDate }).sort({ tokenSequence: 1 });
+    const tokens = await Token.find({ opdId, queueDate })
+      .sort({ tokenSequence: 1 })
+      .lean();
+
+    // Resolve patient names without returning password hashes or other
+    // unnecessary user information.
+    const patientIds = [
+      ...new Set(tokens.map((token) => token.patientId).filter(Boolean))
+    ];
+    const userIds = [
+      ...new Set(tokens.map((token) => token.userId).filter(Boolean))
+    ];
+
+    const users = await User.find({
+      $or: [
+        { patientId: { $in: patientIds } },
+        { userId: { $in: userIds } }
+      ]
+    })
+      .select('patientId userId firstName lastName')
+      .lean();
+
+    const userByPatientId = new Map();
+    const userByUserId = new Map();
+
+    users.forEach((user) => {
+      if (user.patientId) userByPatientId.set(user.patientId, user);
+      if (user.userId) userByUserId.set(user.userId, user);
+    });
+
+    const data = tokens.map((token) => {
+      const user =
+        userByPatientId.get(token.patientId) ||
+        userByUserId.get(token.userId);
+
+      return {
+        ...token,
+        patientName: user
+          ? `${user.firstName} ${user.lastName}`.trim()
+          : 'Patient'
+      };
+    });
 
     res.status(200).json({
       success: true,
-      totalCount: queue.length,
-      data: queue
+      totalCount: data.length,
+      data
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 };

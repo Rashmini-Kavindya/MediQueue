@@ -1,16 +1,110 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
 const ChatLog = require('../models/ChatLog');
 const OPD = require('../models/OPD');
 const User = require('../models/User');
 const { generateId } = require('../utils/id');
 
-// @desc    Suggest OPD using Patient Profile & Gemini AI (Structured JSON + Fast Emergency Override)
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const VALID_URGENCY = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL_EMERGENCY'];
+
+// ---------------------------------------------------------
+// AI PROVIDERS (OpenAI-compatible chat APIs, tried in order)
+// Env: GROQ_API_KEY (primary), MISTRAL_API_KEY (optional fallback)
+// Optional overrides: GROQ_MODEL, MISTRAL_MODEL
+// ---------------------------------------------------------
+const getProviders = () => {
+  const providers = [];
+
+  if (process.env.GROQ_API_KEY) {
+    providers.push({
+      name: 'groq',
+      url: 'https://api.groq.com/openai/v1/chat/completions',
+      apiKey: process.env.GROQ_API_KEY,
+      // Tried in order; a 404 (model missing / no access for this key) moves on to the next one
+      models: [...new Set([
+        process.env.GROQ_MODEL,
+        'llama-3.3-70b-versatile',
+        'openai/gpt-oss-120b',
+        'llama-3.1-8b-instant'
+      ].filter(Boolean))]
+    });
+  }
+
+  if (process.env.MISTRAL_API_KEY) {
+    providers.push({
+      name: 'mistral',
+      url: 'https://api.mistral.ai/v1/chat/completions',
+      apiKey: process.env.MISTRAL_API_KEY,
+      models: [process.env.MISTRAL_MODEL || 'mistral-small-latest']
+    });
+  }
+
+  return providers;
+};
+
+// Calls one provider/model and returns the parsed JSON object. Throws an error with .status on failure.
+const callChatApi = async (provider, modelName, systemInstruction, symptom) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 20000);
+
+  try {
+    const response = await fetch(provider.url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${provider.apiKey}`
+      },
+      body: JSON.stringify({
+        model: modelName,
+        temperature: 0.4,
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: systemInstruction },
+          {
+            role: 'user',
+            content: `Patient Symptoms: "${symptom}"\n\nReturn ONLY a valid JSON object matching the requested schema. Do not include markdown codeblocks or extra text.`
+          }
+        ]
+      }),
+      signal: controller.signal
+    });
+
+    if (!response.ok) {
+      const body = await response.text();
+      const err = new Error(`${response.status} ${body.slice(0, 200)}`);
+      err.status = response.status;
+      throw err;
+    }
+
+    const data = await response.json();
+    let jsonText = (data.choices?.[0]?.message?.content || '').trim();
+
+    // Clean JSON markdown ticks if present
+    if (jsonText.startsWith('```json')) {
+      jsonText = jsonText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    } else if (jsonText.startsWith('```')) {
+      jsonText = jsonText.replace(/^```\s*/, '').replace(/\s*```$/, '');
+    }
+
+    if (!jsonText) throw new Error('Empty AI response');
+    return JSON.parse(jsonText);
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
+
+// @desc    Suggest OPD using Patient Profile & AI (Structured JSON + Fast Emergency Override)
 // @route   POST /api/chatbot/suggest
 // @access  Authenticated / Public
 exports.suggestOpd = async (req, res) => {
   try {
     const { symptom, language = 'en' } = req.body;
-    
+
+    // Groups all messages of one chat session together (sent by the app)
+    const conversationId = req.body.conversationId
+      ? String(req.body.conversationId).trim().slice(0, 60)
+      : undefined;
+
     if (!symptom || typeof symptom !== 'string' || !symptom.trim()) {
       return res.status(400).json({ success: false, message: 'Please describe your symptoms clearly' });
     }
@@ -20,12 +114,12 @@ exports.suggestOpd = async (req, res) => {
     // ---------------------------------------------------------
     // 1. FAST EMERGENCY OVERRIDE RULE ENGINE (Instant ETU Alert)
     // ---------------------------------------------------------
-    const isCriticalEmergency = 
-      textLower.includes('severe chest pain') || 
-      textLower.includes('දැඩි පපුවේ කැක්කුම') || 
-      textLower.includes('fainted') || 
-      textLower.includes('සිහිසුන්') || 
-      textLower.includes('cannot breathe') || 
+    const isCriticalEmergency =
+      textLower.includes('severe chest pain') ||
+      textLower.includes('දැඩි පපුවේ කැක්කුම') ||
+      textLower.includes('fainted') ||
+      textLower.includes('සිහිසුන්') ||
+      textLower.includes('cannot breathe') ||
       textLower.includes('හුස්ම ගන්න බැහැ');
 
     const activeOpds = await OPD.find({ status: 'active' });
@@ -41,6 +135,7 @@ exports.suggestOpd = async (req, res) => {
         const chatLog = await ChatLog.create({
           logId: generateId('LOG'),
           userId: req.user.userId,
+          conversationId,
           symptomQuery: symptom,
           suggestedOpdId: defaultOpd ? defaultOpd.opdId : null,
           aiResponse: emergencyMsg,
@@ -58,6 +153,7 @@ exports.suggestOpd = async (req, res) => {
           aiAnalysis: emergencyMsg,
           urgencyLevel: 'CRITICAL_EMERGENCY',
           logId,
+          conversationId: conversationId || null,
           modelUsed: 'Fast-Rule-Engine-Override'
         },
         message: 'Critical Emergency Detected'
@@ -84,7 +180,7 @@ exports.suggestOpd = async (req, res) => {
     // ---------------------------------------------------------
     // 3. OPD KNOWLEDGE BASE CONTEXT
     // ---------------------------------------------------------
-    const opdContext = activeOpds.length > 0 
+    const opdContext = activeOpds.length > 0
       ? activeOpds.map(opd => `- ID: "${opd.opdId}" | Name: "${opd.name}" | Department: "${opd.department}"`).join('\n')
       : '- ID: "OPD-GEN01" | Name: "General OPD" | Department: "General Medicine"';
 
@@ -116,58 +212,47 @@ exports.suggestOpd = async (req, res) => {
     `;
 
     // ---------------------------------------------------------
-    // 5. GEMINI AI EXECUTION (DYNAMIC MULTI-MODEL FALLBACK)
+    // 5. AI EXECUTION (GROQ -> MISTRAL FALLBACK, RETRY ON 5xx)
     // ---------------------------------------------------------
-    const apiKey = process.env.GEMINI_API_KEY;
     let parsedAiResponse = null;
     let successModel = '';
+    const MAX_ATTEMPTS = 2;
 
-    if (apiKey) {
-      const genAI = new GoogleGenerativeAI(apiKey);
-      
-      // Active Google Gemini Endpoints
-      const candidateModels = [
-        'gemini-3.8-flash',
-        'gemini-3.5-flash',
-        'gemini-3.1-pro-preview',
-        'gemini-2.5-flash',
-        'gemini-2.5-pro'
-      ];
+    const providers = getProviders();
+    if (providers.length === 0) {
+      console.warn('⚠ No AI provider key set (GROQ_API_KEY / MISTRAL_API_KEY). Using rule engine.');
+    }
 
-      for (const modelName of candidateModels) {
-        try {
-          const model = genAI.getGenerativeModel({ model: modelName });
-
-          // Structured Output Prompt Engineering
-          const prompt = `
-            ${systemInstruction}
-            
-            Patient Symptoms: "${symptom}"
-            
-            Return ONLY a valid JSON object matching the requested schema. Do not include markdown codeblocks or extra text.
-          `;
-
-          const result = await model.generateContent(prompt);
-          const response = await result.response;
-          let jsonText = response.text().trim();
-          
-          // Clean JSON markdown ticks if present
-          if (jsonText.startsWith('```json')) {
-            jsonText = jsonText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-          } else if (jsonText.startsWith('```')) {
-            jsonText = jsonText.replace(/^```\s*/, '').replace(/\s*```$/, '');
-          }
-
-          if (jsonText) {
-            parsedAiResponse = JSON.parse(jsonText);
-            successModel = modelName;
-            console.log(`✅ Gemini AI Output generated using model: ${modelName}`);
+    for (const provider of providers) {
+      for (const modelName of provider.models) {
+        for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+          try {
+            parsedAiResponse = await callChatApi(provider, modelName, systemInstruction, symptom);
+            successModel = `${provider.name}:${modelName}`;
+            console.log(`✅ AI Output generated using ${successModel} (attempt ${attempt})`);
             break;
+          } catch (err) {
+            console.warn(`⚠ [${provider.name}:${modelName}] attempt ${attempt} failed: ${err.message}`);
+            // Retry the same model only for temporary server errors / timeouts
+            const retryable = err.status === 500 || err.status === 502 || err.status === 503 || err.name === 'AbortError';
+            if (!retryable) break; // 401 / 404 / 429 / bad JSON -> next model/provider
+            if (attempt < MAX_ATTEMPTS) await sleep(attempt * 1000);
           }
-        } catch (err) {
-          console.warn(`⚠ Model [${modelName}] failed: ${err.message}`);
         }
+        if (parsedAiResponse) break;
       }
+      if (parsedAiResponse) break;
+    }
+
+    // Make sure urgencyLevel is always one of the allowed values (matches ChatLog enum)
+    if (parsedAiResponse && !VALID_URGENCY.includes(parsedAiResponse.urgencyLevel)) {
+      parsedAiResponse.urgencyLevel = 'LOW';
+    }
+
+    // Make sure aiAnalysis is always a non-empty string (ChatLog requires aiResponse)
+    if (parsedAiResponse && (typeof parsedAiResponse.aiAnalysis !== 'string' || !parsedAiResponse.aiAnalysis.trim())) {
+      parsedAiResponse = null;
+      successModel = '';
     }
 
     // ---------------------------------------------------------
@@ -206,6 +291,7 @@ exports.suggestOpd = async (req, res) => {
       const chatLog = await ChatLog.create({
         logId: generateId('LOG'),
         userId: req.user.userId,
+        conversationId,
         symptomQuery: symptom,
         suggestedOpdId: finalSuggestedOpd ? finalSuggestedOpd.opdId : null,
         aiResponse: parsedAiResponse.aiAnalysis,
@@ -227,6 +313,7 @@ exports.suggestOpd = async (req, res) => {
         urgencyLevel: parsedAiResponse.urgencyLevel || 'LOW',
         reasoning: parsedAiResponse.reasoning || null,
         logId,
+        conversationId: conversationId || null,
         modelUsed: successModel || 'Rule-Engine-Fallback'
       },
       message: 'Suggestion generated successfully'
@@ -238,7 +325,7 @@ exports.suggestOpd = async (req, res) => {
   }
 };
 
-// @desc    Get Chat History for logged in user
+// @desc    Get Chat History for logged in user (one row per message; the app groups them by conversationId)
 // @route   GET /api/chatbot/history
 // @access  Private
 exports.getChatHistory = async (req, res) => {
@@ -250,19 +337,23 @@ exports.getChatHistory = async (req, res) => {
   }
 };
 
-// @desc    Delete a specific Chat Log
+// @desc    Delete a whole conversation (all its messages)
 // @route   DELETE /api/chatbot/history/:logId
+//          :logId = conversationId (or the logId of an old log that has no conversationId)
 // @access  Private
 exports.deleteChatLog = async (req, res) => {
   try {
-    const { logId } = req.params;
-    const log = await ChatLog.findOneAndDelete({ logId, userId: req.user.userId });
+    const key = req.params.logId;
+    const result = await ChatLog.deleteMany({
+      userId: req.user.userId,
+      $or: [{ conversationId: key }, { logId: key }]
+    });
 
-    if (!log) {
+    if (result.deletedCount === 0) {
       return res.status(404).json({ success: false, message: 'Chat log not found' });
     }
 
-    res.status(200).json({ success: true, message: 'Chat log deleted successfully' });
+    res.status(200).json({ success: true, message: 'Chat deleted successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -277,5 +368,32 @@ exports.clearAllHistory = async (req, res) => {
     res.status(200).json({ success: true, message: 'All chat history cleared successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Rename a whole conversation
+// @route   PATCH /api/chatbot/history/:logId
+//          :logId = conversationId (or the logId of an old log that has no conversationId)
+// @access  Private
+exports.renameChatLog = async (req, res) => {
+  try {
+    const title = (req.body.title || '').trim();
+    if (!title) {
+      return res.status(400).json({ success: false, message: 'Title is required' });
+    }
+
+    const key = req.params.logId;
+    const result = await ChatLog.updateMany(
+      { userId: req.user.userId, $or: [{ conversationId: key }, { logId: key }] },
+      { title: title.slice(0, 80) }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ success: false, message: 'Chat not found' });
+    }
+
+    res.status(200).json({ success: true, message: 'Chat renamed successfully' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to rename chat' });
   }
 };

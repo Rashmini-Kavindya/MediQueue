@@ -1,0 +1,392 @@
+import React, { useState, useEffect, useContext } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
+import { AuthContext } from '../../context/AuthContext';
+import { useSettings } from '../../context/SettingsContext';
+import API from '../../services/api';
+import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
+
+// iOS system colors - blue as accent, soft grouped background + white cards
+const IOS = {
+  blue: '#007AFF',
+  blueSoft: 'rgba(0,122,255,0.10)',
+  green: '#34C759',
+  greenSoft: 'rgba(52,199,89,0.12)',
+  red: '#FF3B30',
+  redSoft: 'rgba(255,59,48,0.10)',
+  teal: '#32ADE6',
+  tealSoft: 'rgba(50,173,230,0.14)',
+  purple: '#5856D6',
+  purpleSoft: 'rgba(88,86,214,0.12)',
+  label: '#1C1C1E',
+  secondaryLabel: '#636366',
+  tertiaryLabel: '#8E8E93',
+  chevron: '#C7C7CC',
+  fill: '#EFEFF4',
+  surface: '#F7F7FA',
+  separator: '#E9E9EE',
+  groupedBg: '#F2F2F7',
+  white: '#FFFFFF',
+};
+
+// iOS style soft shadow for cards
+const cardShadow = {
+  shadowColor: '#0B1B3A',
+  shadowOffset: { width: 0, height: 6 },
+  shadowOpacity: 0.07,
+  shadowRadius: 16,
+  elevation: 2,
+};
+
+// iOS squircle corners + hairline edge (Android වල ignore වෙනවා)
+const squircle = { borderCurve: 'continuous' };
+const edge = { borderWidth: 0.5, borderColor: 'rgba(60,60,67,0.12)' };
+
+// Optional route params (sent from the chatbot "Get Token" button):
+//   opdId  - OPD to pre-select
+//   reason - text to pre-fill "Reason for Visit"
+export default function RequestNewToken({ navigation, route }) {
+  const { user } = useContext(AuthContext);
+  const { getFontSize } = useSettings();
+  const { t } = useTranslation();
+
+  const presetOpdId = route?.params?.opdId;
+  const presetReason = route?.params?.reason;
+
+  const [clinics, setClinics] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [reason, setReason] = useState(presetReason || '');
+  const [profile, setProfile] = useState(null);
+
+  useEffect(() => {
+    fetchOpds();
+    fetchProfile();
+  }, []);
+
+  // Screen already mounted and opened again from the chatbot with new params -> re-apply them
+  useEffect(() => {
+    if (presetOpdId) {
+      setClinics((prev) =>
+        prev.some((c) => c.id === presetOpdId)
+          ? prev.map((c) => ({ ...c, selected: c.id === presetOpdId }))
+          : prev
+      );
+    }
+  }, [presetOpdId]);
+
+  useEffect(() => {
+    if (presetReason) setReason(presetReason);
+  }, [presetReason]);
+
+  // Patientගේ real data ලබා ගැනීම
+  const fetchProfile = async () => {
+    try {
+      const res = await API.get('/users/me');
+      if (res.data && res.data.success) {
+        setProfile(res.data.data);
+      }
+    } catch (error) {
+      console.log('Error fetching patient profile:', error?.response?.data?.message || error.message);
+    }
+  };
+
+  const fetchOpds = async () => {
+    try {
+      setLoading(true);
+      const response = await API.get('/opds');
+      if (response.data.success) {
+        const list = response.data.data;
+        // Pre-select the OPD suggested by the chatbot (if it exists in the list)
+        const hasPreset = Boolean(presetOpdId) && list.some((o) => o.opdId === presetOpdId);
+        const defaultIndex = list.length > 1 ? 1 : 0;
+
+        const formattedClinics = list.map((opd, index) => ({
+          id: opd.opdId,
+          name: opd.name,
+          room: opd.roomId || 'Room 01',
+          floor: opd.department || 'Floor 01',
+          wait: `~${opd.avgConsultMinutes || 15} min`,
+          selected: hasPreset ? opd.opdId === presetOpdId : index === defaultIndex,
+        }));
+        setClinics(formattedClinics);
+      }
+    } catch (error) {
+      console.error('Error fetching OPDs:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSelectClinic = (id) => {
+    setClinics(clinics.map(c => ({
+      ...c,
+      selected: c.id === id
+    })));
+  };
+
+  const handleContinue = () => {
+    const selectedClinic = clinics.find(c => c.selected);
+    if (!selectedClinic) return;
+    
+    navigation.navigate('ConfirmNewToken', {
+      selectedClinic,
+      reason,
+    });
+  };
+
+  // Patient display values (real data from /users/me, falls back to logged in user)
+  const patientName = profile?.firstName
+    ? `${profile.firstName} ${profile.lastName || ''}`.trim()
+    : user?.firstName
+    ? `${user.firstName} ${user.lastName || ''}`.trim()
+    : 'User';
+  const patientNic = profile?.nic || user?.nic || '';
+  const patientIdText = profile?.patientId || user?.patientId || '';
+  const patientInitials =
+    patientName
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((word) => word[0].toUpperCase())
+      .join('') || 'U';
+  const patientIdLine =
+    [patientNic ? `NIC: ${patientNic}` : '', patientIdText].filter(Boolean).join(' • ') || t('id_not_available', 'ID not available');
+  const isNicVerified = Boolean(patientNic);
+
+  return (
+    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: IOS.groupedBg }}>
+      {/* Top Header */}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+          <TouchableOpacity 
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.7}
+            style={[{ width: 38, height: 38, borderRadius: 19, backgroundColor: IOS.white, justifyContent: 'center', alignItems: 'center', marginRight: 12 }, edge, cardShadow]}
+          >
+            <Ionicons name="chevron-back" size={22} color={IOS.blue} />
+          </TouchableOpacity>
+          <View>
+            <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, fontWeight: '600' }}>
+              MediQueue OPD
+            </Text>
+            <Text style={{ fontSize: getFontSize(22), color: IOS.label, fontWeight: '700', letterSpacing: 0.2 }}>
+              {t('request_new_token', 'Request New Token')}
+            </Text>
+          </View>
+        </View>
+
+        <TouchableOpacity activeOpacity={0.7} style={{ width: 38, height: 38, backgroundColor: IOS.blueSoft, borderRadius: 19, justifyContent: 'center', alignItems: 'center' }}>
+          <Ionicons name="add" size={22} color={IOS.blue} />
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 40 }}
+      >
+        
+        {/* Patient Information Section */}
+        <Text style={{ fontSize: getFontSize(13), color: IOS.tertiaryLabel, fontWeight: '600', letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 8, paddingHorizontal: 6 }}>
+          {t('patient_information', 'Patient Information')}
+        </Text>
+        
+        <View style={[{ backgroundColor: IOS.white, borderRadius: 22, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }, squircle, edge, cardShadow]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 8 }}>
+            <View style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: IOS.blueSoft, justifyContent: 'center', alignItems: 'center', marginRight: 12 }}>
+              <Text style={{ fontSize: getFontSize(15), color: IOS.blue, fontWeight: '700' }}>{patientInitials}</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text numberOfLines={1} style={{ fontSize: getFontSize(16), color: IOS.label, fontWeight: '600', letterSpacing: -0.2 }}>
+                {patientName}
+              </Text>
+              <Text numberOfLines={1} style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, marginTop: 3 }}>
+                {patientIdLine}
+              </Text>
+            </View>
+          </View>
+          
+          {isNicVerified && (
+          <View style={{ backgroundColor: IOS.greenSoft, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: IOS.green, marginRight: 6 }} />
+            <Text style={{ fontSize: getFontSize(11), color: '#248A3D', fontWeight: '600' }}>
+              {t('nicVerified', 'NIC Verified')}
+            </Text>
+          </View>
+          )}
+        </View>
+
+        {/* Select OPD Department Section */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, paddingHorizontal: 6 }}>
+          <Text style={{ fontSize: getFontSize(13), color: IOS.tertiaryLabel, fontWeight: '600', letterSpacing: 0.6, textTransform: 'uppercase' }}>
+            {t('select_opd_department', 'Select OPD Department')}
+          </Text>
+          <TouchableOpacity activeOpacity={0.6}>
+            <Text style={{ fontSize: getFontSize(13), color: IOS.blue, fontWeight: '600' }}>
+              {t('choose_one_clinic', 'Choose 1 clinic')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {loading ? (
+          <View style={{ paddingVertical: 36, alignItems: 'center', justifyContent: 'center' }}>
+            <ActivityIndicator size="large" color={IOS.tertiaryLabel} />
+            <Text style={{ color: IOS.tertiaryLabel, marginTop: 10, fontSize: 13 }}>{t('loading_departments', 'Loading departments...')}</Text>
+          </View>
+        ) : (
+          <View style={{ marginBottom: 14 }}>
+            {clinics.map((clinic) => {
+              const isSelected = clinic.selected;
+              const lowerName = clinic.name.toLowerCase();
+              const isCardiology = lowerName.includes('cardiology');
+              const isDental = lowerName.includes('dental');
+              const isEye = lowerName.includes('eye');
+              const iconBg = isCardiology ? IOS.redSoft : isDental ? IOS.blueSoft : isEye ? IOS.tealSoft : IOS.purpleSoft;
+
+              return (
+                <TouchableOpacity
+                  key={clinic.id}
+                  onPress={() => handleSelectClinic(clinic.id)}
+                  activeOpacity={0.8}
+                  style={[
+                    {
+                      backgroundColor: isSelected ? '#F5F9FF' : IOS.white,
+                      padding: 14,
+                      borderRadius: 20,
+                      marginBottom: 10,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      borderWidth: 2,
+                      borderColor: isSelected ? IOS.blue : 'transparent',
+                    },
+                    squircle,
+                    cardShadow,
+                  ]}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 8 }}>
+                    <View style={[{ width: 44, height: 44, borderRadius: 13, backgroundColor: iconBg, justifyContent: 'center', alignItems: 'center', marginRight: 12 }, squircle]}>
+                      {isCardiology && <Ionicons name="heart" size={19} color={IOS.red} />}
+                      {isDental && <FontAwesome5 name="tooth" size={16} color={IOS.blue} />} 
+                      {isEye && <Ionicons name="eye" size={20} color={IOS.teal} />}
+                      {!isCardiology && !isDental && !isEye && (
+                        <Ionicons name="medkit" size={19} color={IOS.purple} />
+                      )}
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: getFontSize(16), color: IOS.label, fontWeight: '600', letterSpacing: -0.2 }} numberOfLines={1}>
+                        {clinic.name}
+                      </Text>
+                      <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, marginTop: 3 }}>
+                        {clinic.room} • {clinic.floor}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, marginRight: 12, backgroundColor: isSelected ? IOS.blueSoft : IOS.fill }}>
+                      <Text style={{ fontSize: getFontSize(11), fontWeight: '600', color: isSelected ? IOS.blue : IOS.secondaryLabel }}>
+                        {clinic.wait}
+                      </Text>
+                    </View>
+                    
+                    <View style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: 12,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderWidth: isSelected ? 0 : 1.5,
+                      borderColor: IOS.chevron,
+                      backgroundColor: isSelected ? IOS.blue : IOS.white,
+                    }}>
+                      {isSelected && <Ionicons name="checkmark" size={15} color="#ffffff" />}
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
+
+        {/* Reason for Visit */}
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', marginBottom: 8, marginTop: 10, paddingHorizontal: 6 }}>
+          <Text style={{ fontSize: getFontSize(13), color: IOS.tertiaryLabel, fontWeight: '600', letterSpacing: 0.6, textTransform: 'uppercase' }}>
+            {t('reason_for_visit', 'Reason for Visit')}
+          </Text>
+          <Text style={{ fontSize: getFontSize(12), color: IOS.tertiaryLabel, marginLeft: 8 }}>
+            {t('optional', '(optional)')}
+          </Text>
+        </View>
+
+        <TextInput
+          value={reason}
+          onChangeText={setReason}
+          placeholder={t('reason_ph', 'Enter reason for visit...')}
+          placeholderTextColor="#8E8E93"
+          multiline
+          style={[
+            {
+              fontSize: getFontSize(15),
+              backgroundColor: IOS.white,
+              borderRadius: 20,
+              paddingHorizontal: 16,
+              paddingTop: 14,
+              paddingBottom: 14,
+              color: IOS.label,
+              height: 100,
+              marginBottom: 24,
+              lineHeight: 21,
+            },
+            squircle,
+            edge,
+            cardShadow,
+          ]}
+          textAlignVertical="top"
+        />
+
+        {/* Action Buttons */}
+        <TouchableOpacity
+          onPress={handleContinue}
+          activeOpacity={0.85}
+          style={[
+            {
+              backgroundColor: IOS.blue,
+              paddingVertical: 16,
+              borderRadius: 16,
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexDirection: 'row',
+              marginBottom: 10,
+              shadowColor: IOS.blue,
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.3,
+              shadowRadius: 12,
+              elevation: 4,
+            },
+            squircle,
+          ]}
+        >
+          <Text style={{ fontSize: getFontSize(17), color: '#fff', fontWeight: '600', marginRight: 8 }}>
+            {t('continue_confirmation', 'Continue to Confirmation')}
+          </Text>
+          <Ionicons name="arrow-forward" size={18} color="#ffffff" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
+          style={[{ backgroundColor: IOS.fill, paddingVertical: 16, borderRadius: 16, alignItems: 'center', justifyContent: 'center' }, squircle]}
+        >
+          <Text style={{ fontSize: getFontSize(16), color: IOS.secondaryLabel, fontWeight: '600' }}>
+            {t('cancel_back_home', 'Cancel / Back to Home')}
+          </Text>
+        </TouchableOpacity>
+
+      </ScrollView>
+    </SafeAreaView>
+  );
+}

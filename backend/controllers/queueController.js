@@ -1,12 +1,187 @@
 const Token = require('../models/Token');
 const OPD = require('../models/OPD');
+const Room = require('../models/Room');
+const { emitQueueUpdate } = require('../services/queueEvents');
 
+/* ===================== MY PART (call / hold / skip / recall) ===================== */
+
+const callNext = async (req, res) => {
+  try {
+    const { opdId, queueDate } = req.body;
+
+    if (!opdId) {
+      return res.status(400).json({
+        success: false,
+        message: 'opdId is required'
+      });
+    }
+
+    const date =
+      queueDate || new Date().toISOString().split('T')[0];
+
+    const token = await Token.findOneAndUpdate(
+      { opdId, queueDate: date, status: 'waiting' },
+      { $set: { status: 'called', calledAt: new Date() } },
+      { new: true, sort: { priority: -1, tokenSequence: 1 } }
+    );
+
+    if (!token) {
+      return res.status(404).json({
+        success: false,
+        message: 'No waiting tokens found for this OPD'
+      });
+    }
+
+    await emitQueueUpdate(req.io, opdId, token);
+
+    return res.status(200).json({
+      success: true,
+      data: token,
+      message: `Token ${token.tokenNo} called successfully`
+    });
+
+  } catch (error) {
+    console.error('Call next error:', error);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to call next token'
+    });
+  }
+};
+
+// Function to put a called token on hold
+const holdToken = async (req, res) => {
+  try {
+    const { tokenId } = req.params;
+
+    const token = await Token.findOneAndUpdate(
+      {
+        tokenId,
+        status: 'called'
+      },
+      {
+        $set: {
+          status: 'hold'
+        }
+      },
+      {
+        new: true
+      }
+    );
+
+    if (!token) {
+      return res.status(404).json({
+        success: false,
+        message: 'Called token not found'
+      });
+    }
+
+    await emitQueueUpdate(req.io, token.opdId, token);
+
+    return res.status(200).json({
+      success: true,
+      data: token,
+      message: `Token ${token.tokenNo} put on hold successfully`
+    });
+
+  } catch (error) {
+    console.error('Hold token error:', error);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to put token on hold'
+    });
+  }
+};
+
+const skipToken = async (req, res) => {
+  try {
+    const { tokenId } = req.params;
+
+    const token = await Token.findOneAndUpdate(
+      { tokenId, status: 'called' },
+      { $set: { status: 'skipped' } },
+      { new: true }
+    );
+
+    if (!token) {
+      return res.status(404).json({
+        success: false,
+        message: 'Called token not found'
+      });
+    }
+
+    await emitQueueUpdate(req.io, token.opdId, token);
+
+    return res.status(200).json({
+      success: true,
+      data: token,
+      message: `Token ${token.tokenNo} skipped successfully`
+    });
+
+  } catch (error) {
+    console.error('Skip token error:', error);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to skip token'
+    });
+  }
+};
+
+const recallToken = async (req, res) => {
+  try {
+    const { tokenId } = req.params;
+
+    const token = await Token.findOneAndUpdate(
+      {
+        tokenId,
+        status: 'hold'
+      },
+      {
+        $set: {
+          status: 'called',
+          calledAt: new Date()
+        }
+      },
+      {
+        new: true
+      }
+    );
+
+    if (!token) {
+      return res.status(404).json({
+        success: false,
+        message: 'Held token not found'
+      });
+    }
+
+    await emitQueueUpdate(req.io, token.opdId, token);
+
+    return res.status(200).json({
+      success: true,
+      data: token,
+      message: `Token ${token.tokenNo} recalled successfully`
+    });
+
+  } catch (error) {
+    console.error('Recall token error:', error);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to recall token'
+    });
+  }
+};
+
+/* ===================== MINURI'S PART (frontend/minuri) ===================== */
 
 const getMyQueueStatus = async (req, res) => {
   try {
     const userId = req.user.userId;
 
-    const token = await Token.findOne({
+    const tokens = await Token.find({
       userId,
       status: {
         $in: [
@@ -18,53 +193,56 @@ const getMyQueueStatus = async (req, res) => {
       }
     }).sort({ createdAt: -1 });
 
-    if (!token) {
+    if (!tokens || tokens.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'No active queue found'
       });
     }
 
-    const opd = await OPD.findOne({
-      opdId: token.opdId
-    });
+    const activeQueuesList = [];
 
-    if (!opd) {
-      return res.status(404).json({
-        success: false,
-        message: 'OPD not found'
+    for (const token of tokens) {
+      const opd = await OPD.findOne({
+        opdId: token.opdId
       });
-    }
 
-    const patientsAhead = await Token.countDocuments({
-      opdId: token.opdId,
-      queueDate: token.queueDate,
-      tokenSequence: { $lt: token.tokenSequence },
-      status: {
-        $in: [
-          'waiting',
-          'called',
-          'hold',
-          'in-consultation'
-        ]
-      }
-    });
+      if (!opd) continue;
 
-    const estimatedWaitTime =
-      patientsAhead * (opd.avgConsultMinutes || 10);
+      const patientsAhead = await Token.countDocuments({
+        opdId: token.opdId,
+        queueDate: token.queueDate,
+        tokenSequence: { $lt: token.tokenSequence },
+        status: {
+          $in: [
+            'waiting',
+            'called',
+            'hold',
+            'in-consultation'
+          ]
+        }
+      });
 
-    res.status(200).json({
-      success: true,
-      data: {
+      const estimatedWaitTime =
+        patientsAhead * (opd.avgConsultMinutes || 10);
+
+      activeQueuesList.push({
         tokenId: token.tokenId,
         tokenNo: token.tokenNo,
         opdId: token.opdId,
+        opdName: opd.name,
+        room: opd.room || 'Room 01',
         queueDate: token.queueDate,
         status: token.status,
         patientsAhead,
         estimatedWaitMinutes: estimatedWaitTime,
         trackingCode: token.trackingCode
-      }
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: activeQueuesList
     });
 
   } catch (error) {
@@ -75,12 +253,11 @@ const getMyQueueStatus = async (req, res) => {
   }
 };
 
-
 const getLiveQueue = async (req, res) => {
   try {
-    const { opdId } = req.params;
+    const { opdId: requestedOpdId } = req.params;
 
-    const opd = await OPD.findOne({ opdId });
+    const opd = await OPD.findOne({ opdId: requestedOpdId, status: 'active' });
 
     if (!opd) {
       return res.status(404).json({
@@ -88,6 +265,8 @@ const getLiveQueue = async (req, res) => {
         message: 'OPD not found'
       });
     }
+
+    const opdId = opd.opdId;
 
     const queueDate =
       req.query.date ||
@@ -101,18 +280,27 @@ const getLiveQueue = async (req, res) => {
           'waiting',
           'called',
           'hold',
-          'in-consultation'
+          'in-consultation',
+          'completed',
+          'skipped'
         ]
       }
     })
       .sort({ tokenSequence: 1 })
-      .select(
-        'tokenId tokenNo tokenSequence status queueDate opdId'
-      );
+      .select('tokenNo tokenSequence status priority roomId');
 
     const currentToken = tokens.find(
-      token => token.status === 'called'
+      token =>
+        token.status === 'called' ||
+        token.status === 'in-consultation'
     );
+    const nextToken = tokens
+      .filter(token => token.status === 'waiting')
+      .sort((a, b) => (b.priority || 0) - (a.priority || 0) || a.tokenSequence - b.tokenSequence)[0];
+    const roomId = currentToken?.roomId || opd.roomId;
+    const room = roomId
+      ? await Room.findOne({ roomId, status: 'active' }).select('roomNumber name')
+      : null;
 
     res.status(200).json({
       success: true,
@@ -123,10 +311,16 @@ const getLiveQueue = async (req, res) => {
         currentToken: currentToken
           ? currentToken.tokenNo
           : null,
+        nextToken: nextToken?.tokenNo || null,
+        room: room ? (room.roomNumber || room.name || null) : null,
         totalWaiting: tokens.filter(
           token => token.status === 'waiting'
         ).length,
-        queue: tokens
+        queue: tokens.map(token => ({
+          tokenNo: token.tokenNo,
+          tokenSequence: token.tokenSequence,
+          status: token.status
+        }))
       }
     });
 
@@ -138,8 +332,11 @@ const getLiveQueue = async (req, res) => {
   }
 };
 
-
 module.exports = {
+  callNext,
+  holdToken,
+  skipToken,
+  recallToken,
   getMyQueueStatus,
   getLiveQueue
 };
