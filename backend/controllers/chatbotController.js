@@ -7,11 +7,6 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const VALID_URGENCY = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL_EMERGENCY'];
 
-// ---------------------------------------------------------
-// AI PROVIDERS (OpenAI-compatible chat APIs, tried in order)
-// Env: GROQ_API_KEY (primary), MISTRAL_API_KEY (optional fallback)
-// Optional overrides: GROQ_MODEL, MISTRAL_MODEL
-// ---------------------------------------------------------
 const getProviders = () => {
   const providers = [];
 
@@ -111,9 +106,6 @@ exports.suggestOpd = async (req, res) => {
 
     const textLower = symptom.toLowerCase();
 
-    // ---------------------------------------------------------
-    // 1. FAST EMERGENCY OVERRIDE RULE ENGINE (Instant ETU Alert)
-    // ---------------------------------------------------------
     const isCriticalEmergency =
       textLower.includes('severe chest pain') ||
       textLower.includes('දැඩි පපුවේ කැක්කුම') ||
