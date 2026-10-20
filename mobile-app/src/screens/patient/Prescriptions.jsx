@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -12,23 +12,32 @@ export default function Prescriptions({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
+  const latestRequest = useRef(0);
 
   const loadPrescriptions = useCallback(async (refresh = false) => {
-    if (refresh) setRefreshing(true);
-    else setLoading(true);
+    const requestId = ++latestRequest.current;
+    setLoading(!refresh);
+    setRefreshing(refresh);
     setError('');
     try {
       const response = await API.get('/prescriptions/my');
+      if (requestId !== latestRequest.current) return;
       setPrescriptions(Array.isArray(response.data?.data) ? response.data.data : []);
     } catch (requestError) {
+      if (requestId !== latestRequest.current) return;
       setError(requestError?.response?.data?.message || 'Could not load your prescriptions. Please try again.');
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (requestId === latestRequest.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   }, []);
 
-  useFocusEffect(useCallback(() => { loadPrescriptions(); }, [loadPrescriptions]));
+  useFocusEffect(useCallback(() => {
+    loadPrescriptions();
+    return () => { latestRequest.current += 1; };
+  }, [loadPrescriptions]));
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: COLORS.bg }}>
