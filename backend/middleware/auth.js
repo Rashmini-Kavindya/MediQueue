@@ -18,13 +18,20 @@ exports.verifyToken = async (req, res, next) => {
   try {
     // Critical: a deactivated user must not be able to keep using a previously issued JWT.
     const account = await User.findOne({userId: decoded.userId})
-      .select('userId role status');
+      .select('userId patientId role status');
     if (!account || account.status !== 'active') {
       return res.status(401).json({success: false, message: 'Your account is not active.'});
     }
 
     // Current role comes from MongoDB, not a potentially stale JWT payload.
-    req.user = {...decoded, userId: account.userId, role: account.role};
+    // Use the current patient ID from the account record. Older tokens may omit it,
+    // and role-specific IDs can change independently of the account ID.
+    req.user = {
+      ...decoded,
+      userId: account.userId,
+      patientId: account.patientId,
+      role: account.role
+    };
     next();
   } catch (error) {
     console.error('Auth account status check failed:', error);
